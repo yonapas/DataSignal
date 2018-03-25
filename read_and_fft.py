@@ -1,4 +1,4 @@
-from scipy.fftpack import fft
+from scipy.fftpack import fft, ifft
 import numpy as np
 from obspy import read, read_inventory, Stream
 import matplotlib.pyplot as plt
@@ -6,109 +6,161 @@ import matplotlib as mpl
 from glob import glob 
 from DButils import DBtraces
 from app.main import pasData
+import datetime
+from os import mkdir
+import showgraph
+from showgraph import Graph
 
 
-def makePlot(N, dt, x, y, xf, yf, sta, cha, net):
+def makePlot(N, dt, x, y, xf, yf, staname, eventname, filt=False):
 	plt.subplots_adjust()
 
 	time = plt.subplot(2,2,1)
-	time.set_title("{0} {1} {2}, dt:{3}".format( net, sta, cha, dt))
+	time.set_title("{0}, dt:{1}".format( staname, dt))
 	time.plot(x, y)
 
 	plt.subplot(2,2,2)
 	plt.loglog(xf, 2.0/N * np.abs(yf[0:N//2]))
 	plt.axvline(x=1/(2*dt), color="red", lw=2)
 	plt.grid()
-	plt.savefig("{0}_{1}_{2}".format(net, sta, cha))
+	if filt:
+		plt.savefig("{0}/{1}_filter".format(eventname, staname))
+	else:
+		plt.savefig("{0}/{1}".format(eventname, staname))
 	plt.close()
 	return
 
-def filter_by_time(time, data, cut):
-	matrix = np.stack((time, data))
-	new_mat = matrix[:,:cut]
-	return new_mat[0], new_mat[1]
-							
+def do_fft(trace, dt):
+	Ts = dt; # sampling interval
+	Fs = 1/dt # sampling rate
+	
+	y = trace.data
+	n = len(y)
+	t = np.arange(0, n*Ts, Ts) # time vector
+	k = np.arange(n)
+	T = n/Fs
+	
+	freq = k/T
+	freq = freq[range(n/2)]
+
+	yf = np.fft.fft(y)*2/n
+	# yf = fft(y)
+	yf = yf[range(n/2)]
+	# xf = np.linspace(0.0, 1/(dt), N//2)
+
+	if (len(t)-len(y) == 1):
+		t = t[:-1]
+	x = t
+	xf = freq
+	return x, y, xf, yf, n
+
 
 mpl.rcParams["lines.linewidth"] = 0.4
 
 TYPE="ACC"
-time_filt = int((4*60)/0.025)
-print time_filt
 
-files = glob("*502.mseed")
+files = glob("2008*.mseed")
 Traces = DBtraces()
+dt_list = {}
 for file in files:
 
 	traces = read(file)
-	event_name = file.split(".")[0]
-
+	event_name = file.split(".mseed")[0]
+	print event_name
+	
 	try:
 		inv = read_inventory("{0}.xml".format(event_name))
+		d = datetime.datetime.strptime(event_name, '%Y-%m-%dT%H:%M:%S.%f')
+		d = d.strftime('%Y%m%d%H%M%S')
+		event_name = d
 	except:
 		print "no xml file found {0}".format(file)
 	
-	old_tr = traces[0]
+	try:
+		mkdir(event_name)
+	except OSError:
+		pass # alredy exsit
+
+    # merge traces by ID
+	print "len before merge:" , len(traces)
+	traces.merge(1, fill_value='interpolate')
+	print "len after merge:" , len(traces)
+	id_dt=[]
+
 
 	for tr in traces:
 		tr.data = tr.data[:-1]
-		if old_tr.get_id() == tr.get_id():
-			if old_tr.data.dtype == tr.data.dtype:
-				tr = old_tr + tr
-				old_tr = tr
+
+		if tr.meta["network"] == "IS":
+			tr.remove_response(inventory=inv, output=TYPE)
+
+		if tr.meta["network"] == "AA":
+			cha =  tr.meta["channel"]
+			if "H" in cha[1]:
+				print "skipping H channel..."
+				continue
+
+		#try:
+		location = tr.meta["location"]
+		network = tr.meta["network"]
+		station = tr.meta["station"]
+		channel = tr.meta["channel"]
+		name = tr.get_id().replace(".", "_")
+		dt = float(tr.meta["delta"])
+
+		time, acc, freq, ampli, N = do_fft(tr, dt)
+		if dt == 0.02:
+			id_dt.append(tr.get_id())
+
 		else:
-			#old_tr.plot(output="{0}".format(old_tr.get_id()))
-			full_trace = old_tr
-			print full_trace
-			old_tr = tr
+			Filter = 0
+			highpass = False
+			lowpass = False
+			Tstart = tr.stats.starttime
+			FreqPass = False
+			Tstop = False
 
-			if full_trace.meta["network"] == "IS":
-				full_trace.remove_response(inventory=inv, output=TYPE)
-			
-			try:
-				location = full_trace.meta["location"]
-				network = full_trace.meta["network"]
-				station = full_trace.meta["station"]
-				channel = full_trace.meta["channel"]
-				dt = float(full_trace.meta["delta"])
+			canvasName, value = showgraph.set_plot(time, acc, freq, ampli, dt, N, name, event_name)
 
-				Ts = dt; # sampling interval
-				print dt
-				Fs = 1/dt # sampling rate
-				
-				y = full_trace.data
-				print y
-				# N = len(tr.data)
-				n = len(y)
-				t = np.arange(0, n*Ts, Ts) # time vector
-				k = np.arange(n)
-				T = n/Fs
+			tr_filter = tr.copy()
+			while canvasName != None:
+				if canvasName == "Frequency":
+					FreqPass = round(value, 3)
+				if canvasName == "Time":
+					Tstop = round(value, 3)
 
-				#t, y = filter_by_time(t, y , time_filt)
-				# x = np.arange(0.0, N*dt, dt)
-				
-				freq = k/T
-				freq = freq[range(n/2)]
+				if FreqPass:
+					
+					if FreqPass < 2:
+						Filter = "highpass"	
+						highpass = FreqPass
+						# Use filter, and show graph agin
+					if FreqPass > 5:
+						Filter = "lowpass"
+						lowpass = FreqPass
+						# Use filter, and show graph agin
+					tr_filter.filter(Filter, freq=FreqPass, corners=2, zerophase=True)
+					
+				if Tstop:
+					print "cut by time"
+					tr_filter.trim(Tstart, Tstart +Tstop)
 
-				# yf = fft(y)
-				yf = np.fft.fft(y)*2/n
-				print yf
-				yf = yf[range(n/2)]
-				# xf = np.linspace(0.0, 1/(dt), N//2)
-
-				# pasData({"time":[x, y], "fft": [xf, yf]})
+				Ftime, Facc, Ffreq, Fampli, FN = do_fft(tr_filter, dt)
+				canvasName, value= showgraph.set_plot(Ftime, Facc, Ffreq, Fampli, dt, FN, name, event_name, low=lowpass, high=highpass, time=Tstop)
 
 
-				if (len(t)-len(y) == 1):
-					t = t[:-1]
+			# tr_filter. - baseline
+			print "save trace with highpass {0}, lowpass {1}".format(highpass, lowpass)
+			""""
+			TODO:
+			save reace in file, include highpass, lowpass
+			and move to next trace
+			"""
 
-				makePlot(n, dt, t, y, freq, yf, station, channel, network)
-				
-			except:
-				print tr.get_id()
-				old_tr = tr
+		#except:
+		#	print tr.get_id()
 
-		"""
-		Traces.insertTime(long(event_name), data, dt, station, network, channel, "remove_response")
-		Traces.insertFreq(long(event_name), [xf, yf], dt, station, network, channel, "remove_response")
-		"""
+	dt_list[event_name] = id_dt
+# print dt_list
+
 			
