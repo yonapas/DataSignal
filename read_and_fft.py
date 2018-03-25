@@ -2,14 +2,15 @@ from scipy.fftpack import fft, ifft
 import numpy as np
 from obspy import read, read_inventory, Stream
 import matplotlib.pyplot as plt
-import matplotlib as mpl 
-from glob import glob 
+import matplotlib as mpl
+from glob import glob
 from DButils import DBtraces
 from app.main import pasData
 import datetime
 from os import mkdir
 import showgraph
 from showgraph import Graph
+import save_traces
 
 
 def makePlot(N, dt, x, y, xf, yf, staname, eventname, filt=False):
@@ -30,30 +31,6 @@ def makePlot(N, dt, x, y, xf, yf, staname, eventname, filt=False):
 	plt.close()
 	return
 
-def do_fft(trace, dt):
-	Ts = dt; # sampling interval
-	Fs = 1/dt # sampling rate
-	
-	y = trace.data
-	n = len(y)
-	t = np.arange(0, n*Ts, Ts) # time vector
-	k = np.arange(n)
-	T = n/Fs
-	
-	freq = k/T
-	freq = freq[range(n/2)]
-
-	yf = np.fft.fft(y)*2/n
-	# yf = fft(y)
-	yf = yf[range(n/2)]
-	# xf = np.linspace(0.0, 1/(dt), N//2)
-
-	if (len(t)-len(y) == 1):
-		t = t[:-1]
-	x = t
-	xf = freq
-	return x, y, xf, yf, n
-
 
 mpl.rcParams["lines.linewidth"] = 0.4
 
@@ -67,7 +44,6 @@ for file in files:
 	traces = read(file)
 	event_name = file.split(".mseed")[0]
 	print event_name
-	
 	try:
 		inv = read_inventory("{0}.xml".format(event_name))
 		d = datetime.datetime.strptime(event_name, '%Y-%m-%dT%H:%M:%S.%f')
@@ -75,7 +51,7 @@ for file in files:
 		event_name = d
 	except:
 		print "no xml file found {0}".format(file)
-	
+
 	try:
 		mkdir(event_name)
 	except OSError:
@@ -108,11 +84,11 @@ for file in files:
 		name = tr.get_id().replace(".", "_")
 		dt = float(tr.meta["delta"])
 
-		time, acc, freq, ampli, N = do_fft(tr, dt)
 		if dt == 0.02:
 			id_dt.append(tr.get_id())
 
 		else:
+			time, acc, freq, ampli, N = save_traces.do_fft(tr)
 			Filter = 0
 			highpass = False
 			lowpass = False
@@ -130,9 +106,8 @@ for file in files:
 					Tstop = round(value, 3)
 
 				if FreqPass:
-					
 					if FreqPass < 2:
-						Filter = "highpass"	
+						Filter = "highpass"
 						highpass = FreqPass
 						# Use filter, and show graph agin
 					if FreqPass > 5:
@@ -140,27 +115,18 @@ for file in files:
 						lowpass = FreqPass
 						# Use filter, and show graph agin
 					tr_filter.filter(Filter, freq=FreqPass, corners=2, zerophase=True)
-					
 				if Tstop:
-					print "cut by time"
 					tr_filter.trim(Tstart, Tstart +Tstop)
 
-				Ftime, Facc, Ffreq, Fampli, FN = do_fft(tr_filter, dt)
+				Ftime, Facc, Ffreq, Fampli, FN = save_traces.do_fft(tr_filter)
 				canvasName, value= showgraph.set_plot(Ftime, Facc, Ffreq, Fampli, dt, FN, name, event_name, low=lowpass, high=highpass, time=Tstop)
 
 
 			# tr_filter. - baseline
-			print "save trace with highpass {0}, lowpass {1}".format(highpass, lowpass)
-			""""
-			TODO:
-			save reace in file, include highpass, lowpass
-			and move to next trace
-			"""
-
-		#except:
-		#	print tr.get_id()
-
-	dt_list[event_name] = id_dt
-# print dt_list
+			print "save trace with highpass {0}, lowpass {1}, cut time {2} [sec]".format(highpass, lowpass, Tstop)
+			save_traces.SavePlotOriNew(tr, tr_filter, event_name, lowpass, highpass, Tstop)
+			print tr_filter.meta
+			tr_filter.write("{0}/{1}".format(event_name, name), format="SLIST")
 
 			
+
