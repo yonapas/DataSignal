@@ -36,7 +36,7 @@ mpl.rcParams["lines.linewidth"] = 0.4
 
 TYPE="ACC"
 
-files = glob("2008*.mseed")
+files = glob("*002.mseed")
 Traces = DBtraces()
 dt_list = {}
 for file in files:
@@ -124,9 +124,12 @@ for file in files:
 
 			# tr_filter. - baseline
 			print "save trace with highpass {0}, lowpass {1}, cut time {2} [sec]".format(highpass, lowpass, Tstop)
-			save_traces.SavePlotOriNew(tr, tr_filter, event_name, lowpass, highpass, Tstop)
-			print tr_filter.meta
-			tr_filter.write("{0}/{1}".format(event_name, name), format="SLIST")
+			save_traces.SavePlotOriNew(tr, tr_filter, event_name, name, lowpass, highpass, Tstop)
+			metafile = open("{0}/{1}_meta.txt".format(event_name, name), "w")
+			for item in tr_filter.meta:
+				metafile.write("{0}\n".format(tr_filter.meta[item]))
+			metafile.close()
+			tr_filter.write("{0}/{1}_data.txt".format(event_name, name), format="SLIST")
 
 			
 
