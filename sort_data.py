@@ -21,7 +21,7 @@ def getEpiCenterMagnitude(date):
 						depth = line[3]
 						ID = line[0]
 						mag = line[5]
-						return epice, mag , depth, ID
+						return epice, mag, depth, ID
 	
 	print "no earthQ found in txt file\n"
 	return None

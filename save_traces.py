@@ -33,7 +33,8 @@ def do_fft(trace, dt=None):
 def SaveTracesInFile(trace):
 	pass
 
-def SavePlotOriNew(ori_trace, filter_trace, nevent, sta, lowpass=None, highpass=None, timecut=None):
+
+def SavePlotOriNew(ori_trace, filter_trace, nevent, sta, fc, lowpass=None, highpass=None, timecut=None):
 	time, acc, freq, ampli, N = do_fft(ori_trace)
 	Ftime, Facc, Ffreq, Fampli, FN = do_fft(filter_trace)
 
@@ -42,7 +43,7 @@ def SavePlotOriNew(ori_trace, filter_trace, nevent, sta, lowpass=None, highpass=
 	dt = ori_trace.stats.delta
 
 	# save plot:
-	fig, axarr = plt.subplots(2, 2, sharex='col')
+	fig, axarr = plt.subplots(2, 2)
 	fig.suptitle('{0} {1} ,dt:{2}'.format(sta, nevent, dt), fontsize=14, fontweight='bold')
 
 
@@ -74,11 +75,13 @@ def SavePlotOriNew(ori_trace, filter_trace, nevent, sta, lowpass=None, highpass=
 		transform=axarr[1,0].transAxes,
 		color='red', fontsize=10)
 
-
+	axarr[0, 1].axvline(x=fc, color='red')
+	axarr[1, 1].axvline(x=fc, color='red')
+		
 	# plt.grid()
-	plt.savefig("{0}/{1}_raw_filter".format(nevent, sta))
-	manager = plt.get_current_fig_manager()
-    manager.resize(*manager.window.maxsize())
+
+	plt.savefig("{0}/{1}_raw_filter".format(nevent, sta), dpi=1000)
+
 	plt.close()
-	# plt.show()
+	#plt.show()
 	return
