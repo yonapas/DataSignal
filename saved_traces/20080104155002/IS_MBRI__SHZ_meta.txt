@@ -1,0 +1,13 @@
+AttribDict({u'record_length': 4096, u'encoding': u'STEIM1', 'filesize': 2400256, u'dataquality': u'D', u'number_of_records': 7, u'byteorder': u'>'})
+IS
+MSEED
+[u"ObsPy 1.1.0: remove_response(fig=None::inventory=<obspy.core.inventory.inventory.Inventory object at 0x7fbf9dc27b50>::output='ACC'::plot=False::pre_filt=None::taper=True::taper_fraction=0.05::water_level=60::zero_mean=True)", u'ObsPy 1.1.0: trim(endtime=UTCDateTime(2008, 1, 4, 15, 52, 49, 742000)::fill_value=None::nearest_sample=True::pad=False::starttime=UTCDateTime(2008, 1, 4, 15, 49, 51, 900000))', u"ObsPy 1.1.0: filter(options={'corners': 2, 'freq': 0.621, 'zerophase': True}::type='highpass')", u'ObsPy 1.1.0: trim(endtime=UTCDateTime(2008, 1, 4, 15, 52, 49, 742000)::fill_value=None::nearest_sample=True::pad=False::starttime=UTCDateTime(2008, 1, 4, 15, 49, 51, 900000))']
+40.0
+MBRI
+
+2008-01-04T15:49:51.900000Z
+0.025
+1.0
+7115
+2008-01-04T15:52:49.750000Z
+SHZ
