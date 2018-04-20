@@ -76,13 +76,15 @@ def SaveBaseline(ori_trace, bl_trace, nevent, sta):
 
 	
 
-def SavePlotOriNew(ori_trace, filter_trace, nevent, sta, fc, lowpass=None, highpass=None, timecut=None):
-	time, acc, freq, ampli, N = do_fft(ori_trace)
-	Ftime, Facc, Ffreq, Fampli, FN = do_fft(filter_trace)
+# def SavePlotOriNew(ori_trace, filter_trace, nevent, sta, fc, lowpass=None, highpass=None, timecut=None):
+def SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, sta, nevent, fc, lowpass=None, highpass=None, timecut=None):
+
+	# time, acc, freq, ampli, N = do_fft(ori_trace)
+	# Ftime, Facc, Ffreq, Fampli, FN = do_fft(filter_trace)
 
 	PGA_raw = max(np.abs(acc))
 	PGA_filter = max(np.abs(Facc))
-	dt = ori_trace.stats.delta
+	# dt = ori_trace.stats.delta
 
 	# save plot:
 	fig, axarr = plt.subplots(2, 2)
@@ -125,5 +127,5 @@ def SavePlotOriNew(ori_trace, filter_trace, nevent, sta, fc, lowpass=None, highp
 	plt.savefig("{0}/{1}/{2}_raw_filter".format(saved_data_folder, nevent, sta), dpi=dpi)
 
 	plt.close()
-	#plt.show()
+	# plt.show()
 	return

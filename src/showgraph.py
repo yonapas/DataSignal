@@ -18,8 +18,8 @@ class Graph():
         self.x = event.mouseevent.xdata
         self.y = event.mouseevent.ydata
         self.label = event.mouseevent.inaxes._label
-        # plt.close()
-        self.update(event.mouseevent.inaxes._label)
+        plt.close()
+        # self.update(event.mouseevent.inaxes._label)
 
     def get_xy(self):
         if self.x :
@@ -31,8 +31,8 @@ class Graph():
     def press(self, event):
         # print('press', event.key)
         self.key = event.key
-        # plt.close()
-        self.update("reset")
+        plt.close()
+        # self.update("reset")
 
 
 

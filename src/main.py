@@ -15,7 +15,7 @@ raw_data_folder = settings.raw_data_folder
 saved_data_folder = settings.save_data_folder
 save_format = settings.save_traces_format
 
-files = glob("{0}/*002.mseed".format(raw_data_folder))
+files = glob("{0}/*501.mseed".format(raw_data_folder))
 # Traces = DBtraces()
 dt_list = {}
 
@@ -31,12 +31,14 @@ for f in files:
 	except:
 		print "no xml file found {0}".format(f)
 
+	# find magnitude for the event
 	details = magnitude.find_eq_details(event_name)
 	fc = magnitude.calc_fc(details["mw"])
 	print round(fc, 3)
 
 	try:
-		mkdir(event_name)
+		# try to create new folder for saved traces
+		mkdir("{0}/{1}".format(saved_data_folder, event_name))
 	except OSError:
 		pass # alredy exsit
 
@@ -112,6 +114,7 @@ for f in files:
 
 			# save data
 			print "save trace with highpass {0}, lowpass {1}, cut time {2} [sec]".format(highpass, lowpass, Tstop)
-			save_traces.SavePlotOriNew(tr, tr_filter, event_name, name, fc, lowpass, highpass, Tstop)
+			# save_traces.SavePlotOriNew(tr, tr_filter, event_name, name, fc, lowpass, highpass, Tstop)
+			save_traces.SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, name, event_name, fc, lowpass=lowpass, highpass=highpass, timecut=Tstop)
 			save_traces.SaveTracesInFile(tr_filter, event_name, name, dt)
 			save_traces.SaveMetaData(tr_filter, event_name, name, location)

@@ -23,13 +23,13 @@ def useBaseLine(trace, inv, nevent, sta):
 	Ts = trace.stats.delta
 	ydata = trace_baseline.data
 	xdata = np.arange(0, len(ydata)*Ts, Ts)
+	if (len(xdata)-len(ydata) == 1):
+		xdata = xdata[:-1]
 
 	popt, pcov = curve_fit(func, xdata, ydata)
 	x = xdata
 	ybaseline = func(x, *popt)
-	if (len(xdata)-len(ydata) == 1):
-		xdata = xdata[:-1]
-
+	
 	trace_baseline.data = ydata - ybaseline
 
 	# save fig for trace before baseline func and after
