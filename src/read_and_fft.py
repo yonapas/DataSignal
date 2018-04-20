@@ -7,6 +7,7 @@ import showgraph
 import save_traces
 import magnitude
 import settings
+import baseline
 
 
 TYPE = settings.remove_response_unit
@@ -14,7 +15,7 @@ raw_data_folder = settings.raw_data_folder
 saved_data_folder = settings.save_data_folder
 save_format = settings.save_traces_format
 
-files = glob("{0}/*646.mseed".format(raw_data_folder))
+files = glob("{0}/*002.mseed".format(raw_data_folder))
 # Traces = DBtraces()
 dt_list = {}
 
@@ -107,6 +108,9 @@ for f in files:
 													   low=lowpass, high=highpass, time=Tstop)
 
 			# tr_filter. - baseline
+			tr_baseline = baseline.useBaseLine(tr_filter, inv, event_name, name)
+
+			# save data
 			print "save trace with highpass {0}, lowpass {1}, cut time {2} [sec]".format(highpass, lowpass, Tstop)
 			save_traces.SavePlotOriNew(tr, tr_filter, event_name, name, fc, lowpass, highpass, Tstop)
 			save_traces.SaveTracesInFile(tr_filter, event_name, name, dt)

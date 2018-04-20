@@ -56,6 +56,24 @@ def SaveMetaData(trace, event_name, name, location):
 	metafile.write("{0}\n".format(location))
 	metafile.close()
 
+
+def SaveBaseline(ori_trace, bl_trace, nevent, sta):
+	fig, (ax, ax1) = plt.subplots(2, 1, sharex=True)
+	fig.suptitle("Traces Before and After Base Line Filter")
+
+	ax.plot(ori_trace.times(), ori_trace.data, "k")
+	ax1.plot(bl_trace.times(), bl_trace.data, "k")
+	ax1.plot
+	ax.set_xlabel("time [sec]")
+	ax.set_ylabel("Displacement [m]")
+	ax.set_title("Data Before Baseline Filters")
+	ax1.set_title("Data After Baseline Filters")
+	ax1.set_ylabel("Displacement [m]")
+
+	fig.savefig("{0}/{1}/{2}_baseline".format(saved_data_folder, nevent, sta), dpi=dpi)
+	plt.close()
+	pass
+
 	
 
 def SavePlotOriNew(ori_trace, filter_trace, nevent, sta, fc, lowpass=None, highpass=None, timecut=None):

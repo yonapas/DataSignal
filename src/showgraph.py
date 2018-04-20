@@ -18,7 +18,8 @@ class Graph():
         self.x = event.mouseevent.xdata
         self.y = event.mouseevent.ydata
         self.label = event.mouseevent.inaxes._label
-        plt.close()
+        # plt.close()
+        self.update(event.mouseevent.inaxes._label)
 
     def get_xy(self):
         if self.x :
@@ -26,10 +27,13 @@ class Graph():
         if self.key:
             return "reset", self.key
 
+
     def press(self, event):
         # print('press', event.key)
         self.key = event.key
-        plt.close()
+        # plt.close()
+        self.update("reset")
+
 
 
 def set_plot(x,y, xf, yf, dt, N, sta, nevent, fc, low=None, high=None, time=None):
@@ -55,7 +59,7 @@ def set_plot(x,y, xf, yf, dt, N, sta, nevent, fc, low=None, high=None, time=None
     mpl.rcParams["lines.linewidth"] = 0.4
 
     yy = 2.0/N * np.abs(yf[0:N//2])
-    smoo_y = smooth.smoo(yy, 31)
+    smoo_y = smooth.smoo(yy, 101)
     # define fig size:
 
     fig = plt.figure(figsize=(8, 6)) 
