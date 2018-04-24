@@ -35,7 +35,6 @@ class Graph():
         # self.update("reset")
 
 
-
 def set_plot(x,y, xf, yf, dt, N, sta, nevent, fc, low=None, high=None, time=None):
     """
     the function get time and frequency parametrs and make graphes. 
@@ -94,7 +93,7 @@ def set_plot(x,y, xf, yf, dt, N, sta, nevent, fc, low=None, high=None, time=None
     # set x y axis
     ax1.plot(x, y, 'k', picker=7)
     ax2.loglog(xf, 2.0/N * np.abs(yf[0:N//2]), "k", picker=2)
-    ax2.loglog(xf, smoo_y)
+    ax2.loglog(xf, smoo_y, linewidth=1.0)
     ax2.axvline(x=fc, color='red')
 
     fig.canvas.mpl_connect('pick_event', graph.onpick)

@@ -8,7 +8,7 @@ import save_traces
 import magnitude
 import settings
 import baseline
-
+from utils import EQevent, Trace
 
 TYPE = settings.remove_response_unit
 raw_data_folder = settings.raw_data_folder
@@ -28,13 +28,14 @@ for f in files:
 		d = datetime.datetime.strptime(event_name, '%Y-%m-%dT%H:%M:%S.%f')
 		d = d.strftime('%Y%m%d%H%M%S')
 		event_name = d
+		
 	except:
 		print "no xml file found {0}".format(f)
 
 	# find magnitude for the event
 	details = magnitude.find_eq_details(event_name)
 	fc = magnitude.calc_fc(details["mw"])
-	print round(fc, 3)
+	event = EQevent(event_name, magnitude, round(fc, 3))
 
 	try:
 		# try to create new folder for saved traces
@@ -58,6 +59,7 @@ for f in files:
 				print "skipping H channel..."
 				continue
 
+		traceOb = Trace(EQevent, tr)
 		location = tr.meta["location"]
 		network = tr.meta["network"]
 		station = tr.meta["station"]
@@ -76,6 +78,7 @@ for f in files:
 			Tstart = tr.stats.starttime
 			FreqPass = False
 			Tstop = False
+			Ftime = [0]
 
 			canvasName, value = showgraph.set_plot(time, acc, freq, ampli, dt, N, name, event_name, fc)
 
@@ -110,11 +113,12 @@ for f in files:
 													   low=lowpass, high=highpass, time=Tstop)
 
 			# tr_filter. - baseline
-			tr_baseline = baseline.useBaseLine(tr_filter, inv, event_name, name)
+			tr_baseline = baseline.useBaseLine(tr_filter, event_name, name)
 
 			# save data
 			print "save trace with highpass {0}, lowpass {1}, cut time {2} [sec]".format(highpass, lowpass, Tstop)
 			# save_traces.SavePlotOriNew(tr, tr_filter, event_name, name, fc, lowpass, highpass, Tstop)
-			save_traces.SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, name, event_name, fc, lowpass=lowpass, highpass=highpass, timecut=Tstop)
+			if len(Ftime) > 1:
+				save_traces.SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, name, event_name, fc, lowpass=lowpass, highpass=highpass, timecut=Tstop)
 			save_traces.SaveTracesInFile(tr_filter, event_name, name, dt)
 			save_traces.SaveMetaData(tr_filter, event_name, name, location)

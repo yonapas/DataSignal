@@ -1,6 +1,8 @@
 import numpy as np 
+from numpy import diff
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+from scipy import integrate
 from obspy import read, read_inventory
 from glob import glob
 import save_traces
@@ -10,7 +12,12 @@ def func(x, a1, a2, a3, a4, a5, a6):
 	func = a1*x**2+a2*x**3+a3*x**4+a4*x**5+a5*x**6
 	return func
 
-def useBaseLine(trace, inv, nevent, sta):
+def xdataCorrection(xdata, ydata):
+	if (len(xdata) - len(ydata) == 1):
+		xdata = xdata[:1]
+	return xdata
+
+def useBaseLine(trace, nevent, sta):
 	"""
 	the funcation get filterd trace (after proccesing)
 	and do "baseline tapaer". for data in disp domain
@@ -18,22 +25,38 @@ def useBaseLine(trace, inv, nevent, sta):
 	return:
 	trace in acceleration domain.
 	"""
-	trace.remove_response(inventory=inv, output="DISP")
+
 	trace_baseline = trace.copy()
-	Ts = trace.stats.delta
-	ydata = trace_baseline.data
-	xdata = np.arange(0, len(ydata)*Ts, Ts)
-	if (len(xdata)-len(ydata) == 1):
-		xdata = xdata[:-1]
+	acc = trace_baseline.data
+	velocity =[0]
+	disp = [0]
 
-	popt, pcov = curve_fit(func, xdata, ydata)
-	x = xdata
-	ybaseline = func(x, *popt)
-	
-	trace_baseline.data = ydata - ybaseline
+	dt = trace.stats.delta
+	xdata = np.arange(0, len(acc)*dt, dt)
 
-	# save fig for trace before baseline func and after
-	save_traces.SaveBaseline(trace, trace_baseline, nevent, sta)
+	# double integrate:
+	for a in acc:
+		velocity.append(velocity[-1] + a*dt)
+	del velocity[0]
 
-	trace.remove_response(inventory=inv, output="ACC")	
-	return trace
+	for v in velocity:
+		disp.append(disp[-1] + v*dt)
+	del disp[0]
+
+	# fit polynomial 6th order
+	xdata = xdataCorrection(xdata, disp)
+	popt, pcov = curve_fit(func, xdata, disp)
+	dispBL = func(xdata, *popt)
+
+	# secound derivative for dispBaseLine (fit function)
+	velocityBL = np.diff(dispBL)/ np.diff(xdata)
+	accBL = np.diff(velocityBL)/ np.diff(xdata[:-1])
+
+	# subtractsthe second  derivative of the fitted  polynomial from the acceleration  
+	newAcc = acc[:-2] - accBL
+
+	save_traces.SaveBaseline(acc, disp, newAcc, dispBL, xdata, nevent, sta)
+
+	trace_baseline.data = newAcc
+
+	return trace_baseline
