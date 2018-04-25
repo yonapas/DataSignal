@@ -9,6 +9,7 @@ import magnitude
 import settings
 import baseline
 from utils import EQevent, Trace
+from GraphIt import graph
 
 TYPE = settings.remove_response_unit
 raw_data_folder = settings.raw_data_folder
@@ -50,6 +51,7 @@ for f in files:
 	for tr in traces:
 		tr.data = tr.data[:-1]
 
+
 		if tr.meta["network"] == "IS":
 			tr.remove_response(inventory=inv, output=TYPE)
 
@@ -71,54 +73,27 @@ for f in files:
 			id_dt.append(tr.get_id())
 
 		else:
-			time, acc, freq, ampli, N = save_traces.do_fft(tr)
-			Filter = 0
-			highpass = False
-			lowpass = False
 			Tstart = tr.stats.starttime
-			FreqPass = False
-			Tstop = False
-			Ftime = [0]
-
-			canvasName, value = showgraph.set_plot(time, acc, freq, ampli, dt, N, name, event_name, fc)
 
 			tr_filter = tr.copy()
-			while canvasName != None:
-				if canvasName == "Frequency":
-					FreqPass = round(value, 3)
 
-				if canvasName == "Time":
-					Tstop = round(value, 3)
+			show_graph = graph(tr_filter, dt, name, event_name, fc)
+			show_graph.dofft()
+			show_graph.init_graph()
+			show_graph.close()
 
-				if canvasName == "reset":
-					tr_filter = tr.copy()
-					FreqPass = False
-					Tstop = False
-
-				if FreqPass:
-					if FreqPass < fc:
-						Filter = "highpass"
-						highpass = FreqPass
-						# Use filter, and show graph agin
-					if FreqPass > fc+2.0:
-						Filter = "lowpass"
-						lowpass = FreqPass
-						# Use filter, and show graph agin
-					tr_filter.filter(Filter, freq=FreqPass, corners=2, zerophase=True)
-				if Tstop:
-					tr_filter.trim(Tstart, Tstart +Tstop)
-
-				Ftime, Facc, Ffreq, Fampli, FN = save_traces.do_fft(tr_filter)
-				canvasName, value = showgraph.set_plot(Ftime, Facc, Ffreq, Fampli, dt, FN, name, event_name, fc,
-													   low=lowpass, high=highpass, time=Tstop)
+			Tstop, lowpass, highpass = show_graph.getfilters()
+			tr_filter = show_graph.getfiltertrace()
 
 			# tr_filter. - baseline
 			tr_baseline = baseline.useBaseLine(tr_filter, event_name, name)
-
+			
 			# save data
 			print "save trace with highpass {0}, lowpass {1}, cut time {2} [sec]".format(highpass, lowpass, Tstop)
 			# save_traces.SavePlotOriNew(tr, tr_filter, event_name, name, fc, lowpass, highpass, Tstop)
-			if len(Ftime) > 1:
+			if Tstop or lowpass or highpass:
+				Ftime, Facc, Ffreq, Fampli, FN =  show_graph.get_Filter_data()
+				time, acc, ampli, freq , N = show_graph.get_ori_data()
 				save_traces.SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, name, event_name, fc, lowpass=lowpass, highpass=highpass, timecut=Tstop)
 			save_traces.SaveTracesInFile(tr_filter, event_name, name, dt)
 			save_traces.SaveMetaData(tr_filter, event_name, name, location)
