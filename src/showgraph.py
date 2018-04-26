@@ -35,7 +35,7 @@ class Graph():
         # self.update("reset")
 
 
-def set_plot(x,y, xf, yf, dt, N, sta, nevent, fc, low=None, high=None, time=None):
+def set_plot(x, y, xf, yf, dt, N, sta, nevent, fc, low=None, high=None, time=None):
     """
     the function get time and frequency parametrs and make graphes. 
     params:

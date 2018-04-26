@@ -1,14 +1,11 @@
 from obspy import read, read_inventory
 from glob import glob
-from DButils import DBtraces
 import datetime
 from os import mkdir
-import showgraph
 import save_traces
 import magnitude
 import settings
 import baseline
-from utils import EQevent, Trace
 from GraphIt import graph
 
 TYPE = settings.remove_response_unit
@@ -16,8 +13,7 @@ raw_data_folder = settings.raw_data_folder
 saved_data_folder = settings.save_data_folder
 save_format = settings.save_traces_format
 
-files = glob("{0}/*501.mseed".format(raw_data_folder))
-# Traces = DBtraces()
+files = glob("{0}/*914.mseed".format(raw_data_folder))
 dt_list = {}
 
 for f in files:
@@ -36,13 +32,13 @@ for f in files:
 	# find magnitude for the event
 	details = magnitude.find_eq_details(event_name)
 	fc = magnitude.calc_fc(details["mw"])
-	event = EQevent(event_name, magnitude, round(fc, 3))
 
 	try:
 		# try to create new folder for saved traces
 		mkdir("{0}/{1}".format(saved_data_folder, event_name))
 	except OSError:
-		pass # alredy exsit
+		pass
+		# already exsit
 
 	# merge traces by ID
 	traces.merge(1, fill_value='interpolate')
@@ -50,7 +46,6 @@ for f in files:
 
 	for tr in traces:
 		tr.data = tr.data[:-1]
-
 
 		if tr.meta["network"] == "IS":
 			tr.remove_response(inventory=inv, output=TYPE)
@@ -61,7 +56,6 @@ for f in files:
 				print "skipping H channel..."
 				continue
 
-		traceOb = Trace(EQevent, tr)
 		location = tr.meta["location"]
 		network = tr.meta["network"]
 		station = tr.meta["station"]
@@ -86,14 +80,17 @@ for f in files:
 			tr_filter = show_graph.getfiltertrace()
 
 			# tr_filter. - baseline
-			tr_baseline = baseline.useBaseLine(tr_filter, event_name, name)
+			try:
+				tr_baseline = baseline.useBaseLine(tr_filter, event_name, name)
+			except:
+				print "error with base line", name
 			
 			# save data
 			print "save trace with highpass {0}, lowpass {1}, cut time {2} [sec]".format(highpass, lowpass, Tstop)
 			# save_traces.SavePlotOriNew(tr, tr_filter, event_name, name, fc, lowpass, highpass, Tstop)
 			if Tstop or lowpass or highpass:
 				Ftime, Facc, Ffreq, Fampli, FN =  show_graph.get_Filter_data()
-				time, acc, ampli, freq , N = show_graph.get_ori_data()
+				time, acc, freq, ampli, N = show_graph.get_ori_data()
 				save_traces.SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, name, event_name, fc, lowpass=lowpass, highpass=highpass, timecut=Tstop)
 			save_traces.SaveTracesInFile(tr_filter, event_name, name, dt)
 			save_traces.SaveMetaData(tr_filter, event_name, name, location)

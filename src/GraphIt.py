@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib as mpl
-from matplotlib import gridspec
 import smooth
 
 G = 9.81
+
 
 class graph():
 
@@ -26,11 +26,10 @@ class graph():
 		self.xf = None
 		self.yf = None
 
-
 	def init_graph(self):
 		"""
-		inital canves for each trace.
-		shuold run only once for trace
+		initial canves for each trace.
+		should run only once for trace
 		"""
 
 		mpl.rcParams["lines.linewidth"] = 0.4
@@ -53,7 +52,6 @@ class graph():
 			self.set_ori_date()
 			plt.show()
 
-
 	def set_ori_date(self):
 		"""
 		save Original parameters of trace.
@@ -64,7 +62,6 @@ class graph():
 		self.freqOri = self.xf
 		self.ampliOri = self.yf
 		self.NOri = self.N
-
 
 	def set_titles(self):
 		"""
@@ -79,7 +76,6 @@ class graph():
 		self.ax1._label = "Time"
 		self.ax2._label = "Frequency"
 
-	
 	def set_data(self):
 		"""
 		run after change or filters
@@ -99,7 +95,6 @@ class graph():
 		self.x, self.y, self.xf, self.yf, self.N = self.get_ori_data()
 		self.lowpass, self.highpass, self.tstop = None, None, None
 		self.init_graph()
-		
 
 	def onpick(self, event):
 		self.xpick = event.mouseevent.xdata
@@ -108,17 +103,14 @@ class graph():
 		# plt.close()
 		self.update()
 
-
 	def press(self, event):
 		self.key = event.key
 		if self.key == "escape":
 			self.close()
 			self.reset()
-		
-	
+
 	def getXY(self):
 		return self.xpick
-
 
 	def update(self):
 		self.ax2.cla()
@@ -137,13 +129,11 @@ class graph():
 		self.set_notes()
 		self.set_data()
 		plt.show()
-
 	
 	def cutTime(self):
 		tstart =  self.trace.stats.starttime
 		self.trace.trim(tstart , tstart +self.tstop)
 		self.dofft()
-
 
 	def filters(self):
 
@@ -157,7 +147,6 @@ class graph():
 
 		self.dofft()
 
-
 	def set_notes(self):
 
 		if self.lowpass or self.highpass:
@@ -168,36 +157,27 @@ class graph():
 
 		if self.tstop:
 			self.ax1.text(0.95, 0.01, 'cut time = {0}'.format(self.tstop),
-			verticalalignment='bottom', horizontalalignment='right',
+			verticalalignment='btottom', horizontalalignment='right',
 			transform=self.ax1.transAxes,
 			color='red', fontsize=10)
 
-	def close(self):
-		plt.close()
-
-
 	def getfilters(self):
-		return self.cutTime, self.lowpass, self.highpass
+		return self.tstop, self.lowpass, self.highpass
 
-	
 	def getfiltertrace(self):
 		return self.trace
-
 
 	def get_Filter_data(self):
 		return self.x, self.y, self.xf, self.yf, self.N
 
-
 	def get_ori_data(self):
 		return self.timeOri, self.accOri, self.freqOri, self.ampliOri, self.NOri
 
-	
 	def dofft(self):
 		Ts = self.trace.stats.delta # sampling interval
 		Fs = 1/Ts # sampling rate
 		
 		y = self.trace.data/G
-		# y = trace.data
 		n = len(y)
 		t = np.arange(0, n*Ts, Ts) # time vector
 		k = np.arange(n)
@@ -218,3 +198,6 @@ class graph():
 		self.y = y
 		self.N = n
 
+	@staticmethod
+	def close():
+		plt.close()
