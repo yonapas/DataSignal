@@ -41,4 +41,8 @@ def find_eq_details(date):
 		if compare_dates(t_eq, t_file):
 			epi_center = {"lat": float(line[6]), "long": float(line[7])}
 			mw = line[-1].split("\\")[0]
-			return {"mw": float(mw), "epi_center": epi_center}
+			try:
+				mw = float(mw)
+			except:
+				mw = float(line[-2])
+			return {"mw": mw, "epi_center": epi_center}

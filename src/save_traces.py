@@ -10,6 +10,7 @@ G = 9.81 # m/s^2
 saved_data_folder = settings.save_data_folder
 dpi = settings.save_fig_dpi
 save_format = settings.save_traces_format
+checkAgainFolder = settings.CheckAgainFolder
 
 @jit
 def do_fft(trace, dt=None):
@@ -49,6 +50,23 @@ def SaveTracesInFile(trace, event_name, name, dt):
 	    print line,
 
 
+def svaeCheckAgain(trace, nevent, sta, time, acc, freq, amp, N):
+	mpl.rcParams.update({'font.size': 6})
+	trace.write('{0}/{1}_{2}_data.mseed'.format(checkAgainFolder, nevent, sta), format="MSEED")
+	fig, (ax, ax1) = plt.subplots(2, 1)
+	fig.suptitle("Time Domain and Freq Domain")
+
+	ax.plot(time, acc)
+	ax1.loglog(freq, 2.0/N * np.abs(amp[0:N//2]))
+	ax.set_xlabel("time [sec]")
+	ax.set_ylabel("Acceleration [g]")
+	ax.set_title("{0} {1}".format(nevent, sta))
+	ax1.set_ylabel("amplitude")
+
+	fig.savefig('{0}/{1}_{2}_fig'.format(checkAgainFolder, nevent, sta), dpi=dpi)
+	plt.close()
+
+
 def SaveMetaData(trace, event_name, name, location):
 	metafile = open("{0}/{1}/{2}_meta.txt".format(saved_data_folder, event_name, name), "w")
 
@@ -74,7 +92,7 @@ def SaveBaseline(acc, disp, BLacc, BLdisp, time, nevent, sta):
 
 	fig.savefig("{0}/{1}/{2}_baseline".format(saved_data_folder, nevent, sta), dpi=dpi)
 	plt.close()
-	pass
+
 
 	
 

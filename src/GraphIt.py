@@ -25,6 +25,8 @@ class graph():
 		self.y = None
 		self.xf = None
 		self.yf = None
+		if self.trace.meta["network"] == "AA":
+			self.highpass = 0.1
 
 	def init_graph(self):
 		"""
@@ -108,6 +110,9 @@ class graph():
 		if self.key == "escape":
 			self.close()
 			self.reset()
+		if self.key == "n":
+			self.xpick = self.key
+			self.close()
 
 	def getXY(self):
 		return self.xpick
@@ -157,7 +162,7 @@ class graph():
 
 		if self.tstop:
 			self.ax1.text(0.95, 0.01, 'cut time = {0}'.format(self.tstop),
-			verticalalignment='btottom', horizontalalignment='right',
+			verticalalignment='bottom', horizontalalignment='right',
 			transform=self.ax1.transAxes,
 			color='red', fontsize=10)
 
