@@ -8,13 +8,12 @@ G = 9.81
 
 class graph():
 
-	def __init__(self, tr, dt, name, ename, fc):
+	def __init__(self, tr, dt, name, ename):
 		self.trace = tr
 		self.dt = dt
 		self.N = None
 		self.name = name
 		self.ename = ename
-		self.fc = fc
 		self.ax1 = None
 		self.ax2 = None
 		self.fig = None
@@ -25,8 +24,9 @@ class graph():
 		self.y = None
 		self.xf = None
 		self.yf = None
-		if self.trace.meta["network"] == "AA":
-			self.highpass = 0.1
+		self.xpickfirst = None
+		self.xpicksecound = None
+		self.presskey = None
 
 	def init_graph(self):
 		"""
@@ -64,6 +64,7 @@ class graph():
 		self.freqOri = self.xf
 		self.ampliOri = self.yf
 		self.NOri = self.N
+		self.trOri = self.trace
 
 	def set_titles(self):
 		"""
@@ -88,22 +89,32 @@ class graph():
 		self.ax1.plot(self.x, self.y, 'k', picker=7)
 		self.ax2.loglog(self.xf, 2.0/self.N * np.abs(self.yf[0:self.N//2]), "k", picker=2)
 		self.ax2.loglog(self.xf, smoo_y, linewidth=1.0)
-		self.ax2.axvline(x=self.fc, color='red')
 
 	def reset(self):
 		"""
 		reset the graphs, and pick filters again
 		"""
-		self.x, self.y, self.xf, self.yf, self.N = self.get_ori_data()
+		self.x, self.y, self.xf, self.yf, self.N, self.trace = self.get_ori_data()
 		self.lowpass, self.highpass, self.tstop = None, None, None
+		self.xpicksecound = None
+		self.xpickfirst = None
+		self.xpick = None
 		self.init_graph()
 
 	def onpick(self, event):
 		self.xpick = event.mouseevent.xdata
 		self.ypick = event.mouseevent.ydata
 		self.labelpick = event.mouseevent.inaxes._label
-		# plt.close()
-		self.update()
+
+		if self.labelpick == "Frequency":
+			if self.xpickfirst is not None:
+				self.xpicksecound = self.xpick
+				self.update()
+			else:
+				self.xpickfirst = self.xpick
+		else:
+			self.tstop = self.xpick
+			self.update()
 
 	def press(self, event):
 		self.key = event.key
@@ -111,44 +122,45 @@ class graph():
 			self.close()
 			self.reset()
 		if self.key == "n":
-			self.xpick = self.key
+			self.presskey = self.key
+			self.close()
+		if self.key == "y":
 			self.close()
 
-	def getXY(self):
-		return self.xpick
+	def get_key(self):
+		return self.presskey
 
 	def update(self):
 		self.ax2.cla()
 		self.ax1.cla()
 
 		if self.labelpick == "Frequency":
-			self.filter = self.xpick
+			self.filter = (self.xpicksecound, self.xpickfirst)
 			self.filters()
 
 		if self.labelpick == "Time":
-			self.tstop = self.xpick
 			self.cutTime()
 
+		self.xpickfirst = None
 		self.fig.canvas.draw()
 		self.fig.canvas.flush_events()
 		self.set_notes()
 		self.set_data()
+		self.set_titles()
 		plt.show()
 	
 	def cutTime(self):
-		tstart =  self.trace.stats.starttime
-		self.trace.trim(tstart , tstart +self.tstop)
+		tstart = self.trace.stats.starttime
+		self.trace.trim(tstart, tstart + self.tstop)
 		self.dofft()
 
 	def filters(self):
 
-		if self.filter < self.fc:
-			self.highpass = self.filter
-			self.trace.filter("highpass", freq=self.highpass, corners=2, zerophase=True)
+		self.highpass = min(self.filter)
+		self.trace.filter("highpass", freq=self.highpass, corners=2, zerophase=True)
 
-		if self.filter > self.fc +2.0 :
-			self.lowpass = self.filter
-			self.trace.filter("lowpass", freq=self.lowpass, corners=2, zerophase=True)
+		self.lowpass = max(self.filter)
+		self.trace.filter("lowpass", freq=self.lowpass, corners=2, zerophase=True)
 
 		self.dofft()
 
@@ -176,7 +188,7 @@ class graph():
 		return self.x, self.y, self.xf, self.yf, self.N
 
 	def get_ori_data(self):
-		return self.timeOri, self.accOri, self.freqOri, self.ampliOri, self.NOri
+		return self.timeOri, self.accOri, self.freqOri, self.ampliOri, self.NOri, self.trOri
 
 	def dofft(self):
 		Ts = self.trace.stats.delta # sampling interval

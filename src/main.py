@@ -14,7 +14,7 @@ saved_data_folder = settings.save_data_folder
 save_format = settings.save_traces_format
 CheckAgainFolder = settings.CheckAgainFolder
 
-files = glob("{0}/*912.mseed".format(raw_data_folder))
+files = glob("{0}/*914.mseed".format(raw_data_folder))
 dt_list = {}
 
 for f in files:
@@ -32,7 +32,7 @@ for f in files:
 
 	# find magnitude for the event
 	details = magnitude.find_eq_details(event_name)
-	fc = magnitude.calc_fc(details["mw"])
+	# fc = magnitude.calc_fc(details["mw"])
 	epiLocation = details["epi_center"]
 
 	try:
@@ -76,10 +76,10 @@ for f in files:
 
 			tr_filter = tr.copy()
 
-			show_graph = graph(tr_filter, dt, name, event_name, fc)
+			show_graph = graph(tr_filter, dt, name, event_name)
 			show_graph.dofft()
 			show_graph.init_graph()
-			value = show_graph.getXY()
+			value = show_graph.get_key()
 			show_graph.close()
 			if value == "n":
 				print "unknow trace, move to {0} folder".format(CheckAgainFolder)
@@ -101,7 +101,7 @@ for f in files:
 				# save_traces.SavePlotOriNew(tr, tr_filter, event_name, name, fc, lowpass, highpass, Tstop)
 				if Tstop or lowpass or highpass:
 					Ftime, Facc, Ffreq, Fampli, FN = show_graph.get_Filter_data()
-					time, acc, freq, ampli, N = show_graph.get_ori_data()
-					save_traces.SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, name, event_name, fc, lowpass=lowpass, highpass=highpass, timecut=Tstop)
+					time, acc, freq, ampli, N, k = show_graph.get_ori_data()
+					save_traces.SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, name, event_name, lowpass=lowpass, highpass=highpass, timecut=Tstop)
 				save_traces.SaveTracesInFile(tr_filter, event_name, name, dt)
 				save_traces.SaveMetaData(tr_filter, event_name, name, location)

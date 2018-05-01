@@ -45,9 +45,9 @@ def SaveTracesInFile(trace, event_name, name, dt):
 
 	headers = "unit (g), dt {0}".format(dt).split()
 	for line in fileinput.input(["{0}/{1}/{2}_data.txt".format(saved_data_folder, event_name, name)], inplace=True):
-	    if fileinput.isfirstline():
-	        print ' '.join(headers)
-	    print line,
+		if fileinput.isfirstline():
+			print ' '.join(headers)
+		print line,
 
 
 def svaeCheckAgain(trace, nevent, sta, time, acc, freq, amp, N):
@@ -83,7 +83,6 @@ def SaveBaseline(acc, disp, BLacc, BLdisp, time, nevent, sta):
 
 	ax.plot(time, acc, "black", time[:-2], BLacc ,"red")
 	ax1.plot(time, disp, "black", time, BLdisp, "red")
-	ax1.plot
 	ax.set_xlabel("time [sec]")
 	ax.set_ylabel("Acceleration [g]")
 	ax.set_title("Acceleration Difference ")
@@ -92,16 +91,11 @@ def SaveBaseline(acc, disp, BLacc, BLdisp, time, nevent, sta):
 
 	fig.savefig("{0}/{1}/{2}_baseline".format(saved_data_folder, nevent, sta), dpi=dpi)
 	plt.close()
-
-
 	
 
-# def SavePlotOriNew(ori_trace, filter_trace, nevent, sta, fc, lowpass=None, highpass=None, timecut=None):
-def SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, sta, nevent, fc, lowpass=None, highpass=None, timecut=None):
+def SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, sta, nevent, lowpass=None, highpass=None, timecut=None):
 
-	# time, acc, freq, ampli, N = do_fft(ori_trace)
-	# Ftime, Facc, Ffreq, Fampli, FN = do_fft(filter_trace)
-
+	mpl.rcParams.update({'font.size': 6})
 	PGA_raw = max(np.abs(acc))
 	PGA_filter = max(np.abs(Facc))
 	# dt = ori_trace.stats.delta
@@ -132,15 +126,15 @@ def SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N
 		axarr[1,1].text(0.95, 0.01, 'highpass = {0} lowpass = {1}'.format(highpass, lowpass),
 		verticalalignment='bottom', horizontalalignment='right',
 		transform=axarr[1,1].transAxes,
-		color='red', fontsize=10)
+		color='red', fontsize=7)
 	if timecut:
 		axarr[1,0].text(0.95, 0.01, 'Cut time'.format(timecut),
-		verticalalignment='bottom', horizontalalignment='right',
+		verticalalignment='bottom', horizontalalignment='left',
 		transform=axarr[1,0].transAxes,
-		color='red', fontsize=10)
+		color='red', fontsize=7)
 
-	axarr[0, 1].axvline(x=fc, color='red')
-	axarr[1, 1].axvline(x=fc, color='red')
+	axarr[1, 1].axvline(x=lowpass, color='red')
+	axarr[1, 1].axvline(x=highpass, color='red')
 		
 	# plt.grid()
 
