@@ -3,7 +3,12 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl 
 import settings
 import fileinput
+import petl as etl
+import csv
 from numba import jit
+from datetime import datetime
+from scipy.interpolate import interp1d
+
 
 G = 9.81 # m/s^2
 
@@ -11,6 +16,8 @@ saved_data_folder = settings.save_data_folder
 dpi = settings.save_fig_dpi
 save_format = settings.save_traces_format
 checkAgainFolder = settings.CheckAgainFolder
+catalogfile = settings.flatfile
+priod_value = settings.interpulate_value
 
 @jit
 def do_fft(trace, dt=None):
@@ -67,13 +74,12 @@ def svaeCheckAgain(trace, nevent, sta, time, acc, freq, amp, N):
 	plt.close()
 
 
-def SaveMetaData(trace, event_name, name, location):
+def SaveMetaData(trace, event_name, name, ):
 	metafile = open("{0}/{1}/{2}_meta.txt".format(saved_data_folder, event_name, name), "w")
 
 	for item in trace.meta:
 		metafile.write("{0}\n".format(trace.meta[item]))
 
-	metafile.write("{0}\n".format(location))
 	metafile.close()
 
 
@@ -81,7 +87,7 @@ def SaveBaseline(acc, disp, BLacc, BLdisp, time, nevent, sta):
 	fig, (ax, ax1) = plt.subplots(2, 1, sharex=True)
 	fig.suptitle("Trace Before and After Base Line Filter")
 
-	ax.plot(time, acc, "black", time[:-2], BLacc ,"red")
+	ax.plot(time, acc, "black", time[:-2], BLacc,"red")
 	ax1.plot(time, disp, "black", time, BLdisp, "red")
 	ax.set_xlabel("time [sec]")
 	ax.set_ylabel("Acceleration [g]")
@@ -93,7 +99,7 @@ def SaveBaseline(acc, disp, BLacc, BLdisp, time, nevent, sta):
 	plt.close()
 	
 
-def SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, sta, nevent, lowpass=None, highpass=None, timecut=None):
+def SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, sta, nevent, filters):
 
 	mpl.rcParams.update({'font.size': 6})
 	PGA_raw = max(np.abs(acc))
@@ -122,19 +128,19 @@ def SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N
 
 	axarr[1,1].loglog(Ffreq, 2.0/FN * np.abs(Fampli[0:FN//2]))
 
-	if highpass or lowpass:
-		axarr[1,1].text(0.95, 0.01, 'highpass = {0} lowpass = {1}'.format(highpass, lowpass),
+	if filters["highpass"] or filters["lowpass"]:
+		axarr[1,1].text(0.95, 0.01, 'highpass = {0} lowpass = {1}'.format(filters["highpass"], filters["lowpass"]),
 		verticalalignment='bottom', horizontalalignment='right',
 		transform=axarr[1,1].transAxes,
 		color='red', fontsize=7)
-	if timecut:
-		axarr[1,0].text(0.95, 0.01, 'Cut time'.format(timecut),
+	if filters["tstop"]:
+		axarr[1,0].text(0.95, 0.01, 'Cut time'.format(filters["tstop"]),
 		verticalalignment='bottom', horizontalalignment='left',
 		transform=axarr[1,0].transAxes,
 		color='red', fontsize=7)
 
-	axarr[1, 1].axvline(x=lowpass, color='red')
-	axarr[1, 1].axvline(x=highpass, color='red')
+	axarr[1, 1].axvline(x=filters["highpass"], color='red')
+	axarr[1, 1].axvline(x=filters["lowpass"], color='red')
 		
 	# plt.grid()
 
@@ -143,3 +149,46 @@ def SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N
 	plt.close()
 	# plt.show()
 	return
+
+
+def interpulate(x, y):
+	all_freq = sorted(x + priod_value)
+	new_value = interp1d(x, y)(all_freq)
+	ground_motion = zip(new_value, all_freq)
+	ground_motion = sorted(ground_motion, key=lambda point: point[0])
+
+	return ground_motion
+
+
+def saveTraceFlatFile(trace, nevent, metadata, magnituda, freq, ampl, filters, distance, peak):
+	existtabel = etl.fromcsv(catalogfile)
+	headersfile = open(settings.headres, "r").readlines()
+	headers = headersfile[0].split(",")
+	valuesdict = {}
+	for head in headers:
+		valuesdict[head] = None
+
+	date = datetime.strptime(nevent, '%Y%m%d%H%M%S')
+	valuesdict["YEAR"] = date.year
+	valuesdict["MODY"] = "{0}{1}".format(date.month, date.day)
+	valuesdict["HRMN"] = "{0}{1}".format(date.hour, date.minute)
+	valuesdict["Station Name"] = None
+	valuesdict["Earthquake Magnitude"] = magnituda
+	valuesdict["EpiD      (km)"] = distance
+	valuesdict["Station Latitude"] = metadata["sta_lat"]
+	valuesdict["Station Longitude"] = metadata["sta_long"]
+	valuesdict["PGA (g)"] = peak["PGA"]
+	valuesdict["PGV (cm/sec)"] = peak["PGV"]
+	valuesdict["PGD (cm)"] = peak["PGD"]
+	valuesdict["HP (Hz)"] = filters["highpass"]
+	valuesdict["LP (Hz)"] = filters["lowpass"]
+
+	inter_freq = interpulate(freq, ampl)
+
+	newTrace = [[headers],[values]]
+
+	updatetable = etl.annex(existtabel, newTrace)
+	with open(catalogfile, 'w') as f:
+		writer = csv.writer(f)
+		writer.writerows(updatetable)
+

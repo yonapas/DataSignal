@@ -3,7 +3,7 @@ from glob import glob
 import datetime
 from os import mkdir
 import save_traces
-import magnitude
+import metaData
 import settings
 import baseline
 from GraphIt import graph
@@ -31,7 +31,7 @@ for f in files:
 		print "no xml file found {0}".format(f)
 
 	# find magnitude for the event
-	details = magnitude.find_eq_details(event_name)
+	details = metaData.find_eq_details(event_name)
 	# fc = magnitude.calc_fc(details["mw"])
 	epiLocation = details["epi_center"]
 
@@ -50,6 +50,8 @@ for f in files:
 
 	for tr in traces:
 		tr.data = tr.data[:-1]
+		seismograph = inv.get_channel_metadata(tr.get_id())
+		distance = metaData.calculate_distance(seismograph, epiLocation)
 
 		if tr.meta["network"] == "IS":
 			tr.remove_response(inventory=inv, output=TYPE)
@@ -61,7 +63,6 @@ for f in files:
 				print "skipping H channel..."
 				continue
 
-		location = tr.meta["location"]
 		network = tr.meta["network"]
 		station = tr.meta["station"]
 		channel = tr.meta["channel"]
@@ -76,18 +77,18 @@ for f in files:
 
 			tr_filter = tr.copy()
 
-			show_graph = graph(tr_filter, dt, name, event_name)
+			show_graph = graph(tr_filter, dt, name, event_name, distance)
 			show_graph.dofft()
 			show_graph.init_graph()
 			value = show_graph.get_key()
 			show_graph.close()
 			if value == "n":
 				print "unknow trace, move to {0} folder".format(CheckAgainFolder)
-				time, acc, freq, ampli, N = show_graph.get_ori_data()
+				time, acc, freq, ampli, N, k = show_graph.get_ori_data()
 				save_traces.svaeCheckAgain(traces, event_name, name, time, acc, freq, ampli, N)
 
 			else:
-				Tstop, lowpass, highpass = show_graph.getfilters()
+				filters = show_graph.getfilters()
 				tr_filter = show_graph.getfiltertrace()
 
 				# tr_filter. - baseline
@@ -95,13 +96,17 @@ for f in files:
 					tr_baseline = baseline.useBaseLine(tr_filter, event_name, name)
 				except:
 					print "error with base line", name
+					tr_baseline = tr_filter
 
 				# save data
-				print "save trace with highpass {0}, lowpass {1}, cut time {2} [sec]".format(highpass, lowpass, Tstop)
+				print "save trace with filters: ", filters
 				# save_traces.SavePlotOriNew(tr, tr_filter, event_name, name, fc, lowpass, highpass, Tstop)
-				if Tstop or lowpass or highpass:
+				if show_graph.usefilters():
 					Ftime, Facc, Ffreq, Fampli, FN = show_graph.get_Filter_data()
 					time, acc, freq, ampli, N, k = show_graph.get_ori_data()
-					save_traces.SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, name, event_name, lowpass=lowpass, highpass=highpass, timecut=Tstop)
-				save_traces.SaveTracesInFile(tr_filter, event_name, name, dt)
-				save_traces.SaveMetaData(tr_filter, event_name, name, location)
+					save_traces.SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, name, event_name, filters)
+
+				peak_ground = metaData.double_integrate(tr_baseline.data, dt)
+
+				save_traces.SaveTracesInFile(tr_baseline, event_name, name, dt)
+				save_traces.SaveMetaData(tr_baseline, event_name, name)

@@ -8,12 +8,13 @@ G = 9.81
 
 class graph():
 
-	def __init__(self, tr, dt, name, ename):
+	def __init__(self, tr, dt, name, ename, d):
 		self.trace = tr
 		self.dt = dt
 		self.N = None
 		self.name = name
 		self.ename = ename
+		self.distance = d
 		self.ax1 = None
 		self.ax2 = None
 		self.fig = None
@@ -27,6 +28,7 @@ class graph():
 		self.xpickfirst = None
 		self.xpicksecound = None
 		self.presskey = None
+
 
 	def init_graph(self):
 		"""
@@ -71,7 +73,7 @@ class graph():
 		should run only once
 		"""
 		self.fig.suptitle('{0} {1} ,dt:{2}'.format(self.name, self.ename, self.dt), fontsize=20)
-		self.ax1.set_title("press Esc for reset signal", fontsize=12)
+		self.ax1.set_title("press Esc for reset signal\n distance from Epicenter {0} KM".format(self.distance), fontsize=12)
 		self.ax1.set_ylabel("ACC [g]")
 		self.ax1.set_xlabel("time [sec]")
 
@@ -179,7 +181,7 @@ class graph():
 			color='red', fontsize=10)
 
 	def getfilters(self):
-		return self.tstop, self.lowpass, self.highpass
+		return {"tstop": self.tstop, "lowpass": self.lowpass, "highpass": self.highpass}
 
 	def getfiltertrace(self):
 		return self.trace
@@ -189,6 +191,12 @@ class graph():
 
 	def get_ori_data(self):
 		return self.timeOri, self.accOri, self.freqOri, self.ampliOri, self.NOri, self.trOri
+
+	def usefilters(self):
+		if self.tstop or self.lowpass or self.highpass:
+			return True
+		else:
+			return False
 
 	def dofft(self):
 		Ts = self.trace.stats.delta # sampling interval

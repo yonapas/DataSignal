@@ -1,6 +1,6 @@
 import numpy as np
 from datetime import datetime
-
+from obspy.geodetics import gps2dist_azimuth
 
 beta = 3600.0  # m/s sheer wave velocity
 dSigma = 4.0  # Stress-drop
@@ -46,3 +46,32 @@ def find_eq_details(date):
 			except:
 				mw = float(line[-2])
 			return {"mw": mw, "epi_center": epi_center}
+
+def calculate_distance(staloc, eventloc):
+	sta_lat = staloc["latitude"]
+	sta_lng = staloc["longitude"]
+
+	event_lat = eventloc["lat"]
+	event_lng = eventloc["long"]
+
+	epi_dist, az, baz = gps2dist_azimuth(float(event_lat), float(event_lng), float(sta_lat), float(sta_lng))
+	return round(epi_dist/1000, 6)
+
+
+def double_integrate(acc, dt):
+	velocity = [0]
+	disp = [0]
+
+	for a in acc:
+		velocity.append(velocity[-1] + a * dt)
+	del velocity[0]
+
+	for v in velocity:
+		disp.append(disp[-1] + v * dt)
+	del disp[0]
+
+	PGD = max(np.abs(disp))
+	PGV = max(np.abs(velocity))
+	PGA = max(np.abs(acc))
+
+	return {"PGA": PGA, "PGV": PGV, "PGD": PGD}
