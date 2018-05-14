@@ -7,6 +7,7 @@ import metaData
 import settings
 import baseline
 from GraphIt import graph
+import AAnetwork
 
 TYPE = settings.remove_response_unit
 raw_data_folder = settings.raw_data_folder
@@ -52,21 +53,23 @@ for f in files:
 		tr.data = tr.data[:-1]
 		seismograph = inv.get_channel_metadata(tr.get_id())
 		distance = metaData.calculate_distance(seismograph, epiLocation)
+		seismograph["network"] = tr.meta["network"]
+		seismograph["station"] = tr.meta["station"]
+		seismograph["channel"] = tr.meta["channel"]
+		name = tr.get_id().replace(".", "_")
 
-		if tr.meta["network"] == "IS":
+		if seismograph["network"] == "IS":
 			tr.remove_response(inventory=inv, output=TYPE)
+			seismograph["type"] = None
 
-		if tr.meta["network"] == "AA":
-			cha = tr.meta["channel"]
+		if seismograph["network"] == "AA":
+			seismograph["type"] = AAnetwork.getStationType()
 
-			if "H" in cha[1]:
+			if "H" in seismograph["channel"][1]:
 				print "skipping H channel..."
 				continue
 
-		network = tr.meta["network"]
-		station = tr.meta["station"]
-		channel = tr.meta["channel"]
-		name = tr.get_id().replace(".", "_")
+
 		dt = float(tr.meta["delta"])
 
 		if dt == 0.02:
@@ -107,6 +110,11 @@ for f in files:
 					save_traces.SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, name, event_name, filters)
 
 				peak_ground = metaData.double_integrate(tr_baseline.data, dt)
+				# get dict {"freq":"ampli"}
+				flatfile_data = save_traces.interpulate(Ffreq, Fampli, dt, FN)
 
 				save_traces.SaveTracesInFile(tr_baseline, event_name, name, dt)
 				save_traces.SaveMetaData(tr_baseline, event_name, name)
+
+				save_traces.saveTraceFlatFile(tr_baseline, event_name, seismograph, details, flatfile_data, filters,
+											  distance, peak_ground, epiLocation)

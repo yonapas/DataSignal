@@ -7,8 +7,8 @@ import petl as etl
 import csv
 from numba import jit
 from datetime import datetime
-from scipy.interpolate import interp1d
-
+# from scipy.interpolate import interp1d
+from numpy import interp
 
 G = 9.81 # m/s^2
 
@@ -151,17 +151,23 @@ def SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N
 	return
 
 
-def interpulate(x, y):
-	all_freq = sorted(x + priod_value)
-	new_value = interp1d(x, y)(all_freq)
-	ground_motion = zip(new_value, all_freq)
+def interpulate(x, y, dt, N):
+	Y = 2.0/N * np.abs(y[0:N//2])
+	priod_value = settings.interpulate_value
+	all_freq = sorted(list(x) + list(priod_value))
+	if dt == 0.025:
+		all_freq = sorted(i for i in all_freq if i <= 20.0)
+		priod_value = sorted(i for i in priod_value if i <= 20.0)
+
+	new_value = interp(priod_value, x, Y)
+	ground_motion = zip(priod_value, new_value)
 	ground_motion = sorted(ground_motion, key=lambda point: point[0])
 
-	return ground_motion
+	return dict(ground_motion)
 
 
-def saveTraceFlatFile(trace, nevent, metadata, magnituda, freq, ampl, filters, distance, peak):
-	existtabel = etl.fromcsv(catalogfile)
+def saveTraceFlatFile(trace, nevent, station_detils, magnituda, motion, filters, distance, peak, hypo):
+	# existtabel = etl.fromcsv(catalogfile)
 	headersfile = open(settings.headres, "r").readlines()
 	headers = headersfile[0].split(",")
 	valuesdict = {}
@@ -170,25 +176,36 @@ def saveTraceFlatFile(trace, nevent, metadata, magnituda, freq, ampl, filters, d
 
 	date = datetime.strptime(nevent, '%Y%m%d%H%M%S')
 	valuesdict["YEAR"] = date.year
-	valuesdict["MODY"] = "{0}{1}".format(date.month, date.day)
-	valuesdict["HRMN"] = "{0}{1}".format(date.hour, date.minute)
+	valuesdict["MODY"] = "{0}{1}".format(date.strftime('%m'), date.strftime('%d'))
+	valuesdict["HRMN"] = "{0}{1}".format(date.strftime('%H'), date.strftime('%S'))
 	valuesdict["Station Name"] = None
-	valuesdict["Earthquake Magnitude"] = magnituda
+	valuesdict["Earthquake Magnitude"] = magnituda["mw"]
 	valuesdict["EpiD      (km)"] = distance
-	valuesdict["Station Latitude"] = metadata["sta_lat"]
-	valuesdict["Station Longitude"] = metadata["sta_long"]
+	valuesdict["Station Latitude"] = station_detils["latitude"]
+	valuesdict["Station Longitude"] = station_detils["longitude"]
 	valuesdict["PGA (g)"] = peak["PGA"]
 	valuesdict["PGV (cm/sec)"] = peak["PGV"]
 	valuesdict["PGD (cm)"] = peak["PGD"]
 	valuesdict["HP (Hz)"] = filters["highpass"]
 	valuesdict["LP (Hz)"] = filters["lowpass"]
+	valuesdict["Hypocenter Longitude (deg)"] = hypo["long"]
+	valuesdict["Hypocenter Latitude (deg)"] = hypo["lat"]
+	valuesdict["Station Network"] = station_detils["network"]
+	valuesdict["Station Type"] = station_detils["type"]
+	valuesdict["Station Name"] = trace.get_id()
 
-	inter_freq = interpulate(freq, ampl)
+	for item in motion:
+		if item == 0.01:
+			valuesdict["f 0.01 Hz"] = motion[item]
+		if item in valuesdict or str(item)+"0" in valuesdict:
+			valuesdict[str(item)+"0"] = motion[item]
 
-	newTrace = [[headers],[values]]
+	print valuesdict
 
-	updatetable = etl.annex(existtabel, newTrace)
-	with open(catalogfile, 'w') as f:
-		writer = csv.writer(f)
-		writer.writerows(updatetable)
+	with open(catalogfile, 'r+b') as f:
+		header = next(csv.reader(f))
+		print headers
+		dict_writer = csv.DictWriter(f, header, -999)
+		dict_writer.writerow(valuesdict)
+
 
