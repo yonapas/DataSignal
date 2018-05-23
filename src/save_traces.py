@@ -7,7 +7,6 @@ import petl as etl
 import csv
 from numba import jit
 from datetime import datetime
-# from scipy.interpolate import interp1d
 from numpy import interp
 
 G = 9.81 # m/s^2
@@ -16,6 +15,7 @@ saved_data_folder = settings.save_data_folder
 dpi = settings.save_fig_dpi
 save_format = settings.save_traces_format
 checkAgainFolder = settings.CheckAgainFolder
+checkAgainFile = settings.CheckAgainFile
 catalogfile = settings.flatfile
 priod_value = settings.interpulate_value
 
@@ -25,7 +25,6 @@ def do_fft(trace, dt=None):
 	Fs = 1/Ts # sampling rate
 	
 	y = trace.data/G
-	# y = trace.data
 	n = len(y)
 	t = np.arange(0, n*Ts, Ts) # time vector
 	k = np.arange(n)
@@ -35,9 +34,7 @@ def do_fft(trace, dt=None):
 	freq = freq[range(n/2)]
 
 	yf = np.fft.fft(y)*2/n
-	# yf = fft(y)
 	yf = yf[range(n/2)]
-	# xf = np.linspace(0.0, 1/(dt), N//2)
 
 	if (len(t)-len(y) == 1):
 		t = t[:-1]
@@ -57,9 +54,14 @@ def SaveTracesInFile(trace, event_name, name, dt):
 		print line,
 
 
-def svaeCheckAgain(trace, nevent, sta, time, acc, freq, amp, N):
+def svaeCheckAgain(trace, nevent, sta, time, acc, freq, amp, N, eno):
 	mpl.rcParams.update({'font.size': 6})
-	trace.write('{0}/{1}_{2}_data.mseed'.format(checkAgainFolder, nevent, sta), format="MSEED")
+	# trace.write('{0}/{1}_{2}_data.mseed'.format(checkAgainFolder, nevent, sta), format="MSEED")
+	# save trace in csv file:
+	f = open(checkAgainFile, 'r+b')
+	f.write("{0},{1},{2}".format(nevent,eno, sta))
+	f.close()
+
 	fig, (ax, ax1) = plt.subplots(2, 1)
 	fig.suptitle("Time Domain and Freq Domain")
 
@@ -151,6 +153,30 @@ def SavePlotOriNew(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N
 	return
 
 
+def existtrace(dict):
+	existtabel = etl.fromcsv(catalogfile)
+	if etl.nrows(existtabel) <1:
+		return False
+
+	lkp = etl.lookup(existtabel, ("Station Name", "YEAR", "MODY", "HRMN"), "Record Sequence Number")
+	try:
+		exist = lkp[(dict["Station Name"], dict["YEAR"], dict["MODY"], dict["HRMN"])]
+	except:
+		return False
+
+	if len(exist) > 1:
+		print "more then one row duplicate"
+	if exist:
+		return exist
+
+
+def get_n_row():
+	existtabel = etl.fromcsv(catalogfile)
+	n = etl.nrows(existtabel)
+
+	return n
+
+
 def interpulate(x, y, dt, N):
 	Y = 2.0/N * np.abs(y[0:N//2])
 	priod_value = settings.interpulate_value
@@ -167,7 +193,6 @@ def interpulate(x, y, dt, N):
 
 
 def saveTraceFlatFile(trace, nevent, station_detils, magnituda, motion, filters, distance, peak, hypo):
-	# existtabel = etl.fromcsv(catalogfile)
 	headersfile = open(settings.headres, "r").readlines()
 	headers = headersfile[0].split(",")
 	valuesdict = {}
@@ -175,10 +200,9 @@ def saveTraceFlatFile(trace, nevent, station_detils, magnituda, motion, filters,
 		valuesdict[head] = None
 
 	date = datetime.strptime(nevent, '%Y%m%d%H%M%S')
-	valuesdict["YEAR"] = date.year
+	valuesdict["YEAR"] = str(date.year)
 	valuesdict["MODY"] = "{0}{1}".format(date.strftime('%m'), date.strftime('%d'))
 	valuesdict["HRMN"] = "{0}{1}".format(date.strftime('%H'), date.strftime('%S'))
-	valuesdict["Station Name"] = None
 	valuesdict["Earthquake Magnitude"] = magnituda["mw"]
 	valuesdict["EpiD      (km)"] = distance
 	valuesdict["Station Latitude"] = station_detils["latitude"]
@@ -193,6 +217,18 @@ def saveTraceFlatFile(trace, nevent, station_detils, magnituda, motion, filters,
 	valuesdict["Station Network"] = station_detils["network"]
 	valuesdict["Station Type"] = station_detils["type"]
 	valuesdict["Station Name"] = trace.get_id()
+	valuesdict["Record Sequence Number"] = get_n_row()+1
+
+	exist_row = existtrace(valuesdict)
+	if exist_row:
+		f = open(catalogfile, 'r').readlines()
+		fn = open(catalogfile, "w")
+		for line in f:
+			seqnum = line.split(",")[0]
+			if seqnum != exist_row[0]:
+				fn.write(line)
+		fn.close()
+		valuesdict["Record Sequence Number"] = exist_row[0]
 
 	for item in motion:
 		if item == 0.01:
@@ -200,11 +236,8 @@ def saveTraceFlatFile(trace, nevent, station_detils, magnituda, motion, filters,
 		if item in valuesdict or str(item)+"0" in valuesdict:
 			valuesdict[str(item)+"0"] = motion[item]
 
-	print valuesdict
-
 	with open(catalogfile, 'r+b') as f:
 		header = next(csv.reader(f))
-		print headers
 		dict_writer = csv.DictWriter(f, header, -999)
 		dict_writer.writerow(valuesdict)
 

@@ -8,24 +8,39 @@ import settings
 import baseline
 from GraphIt import graph
 import AAnetwork
+import petl as etl
 
 TYPE = settings.remove_response_unit
 raw_data_folder = settings.raw_data_folder
 saved_data_folder = settings.save_data_folder
 save_format = settings.save_traces_format
 CheckAgainFolder = settings.CheckAgainFolder
+CheckAgainFile = settings.CheckAgainFile
+mode = settings.mode
 
-files = glob("{0}/*914.mseed".format(raw_data_folder))
-dt_list = {}
+check_trace_table = False
+files = []
+
+if mode == "MAIN":
+	files = glob("{0}/*914.mseed".format(raw_data_folder))
+	dt_list = {}
+
+if mode == "CHECK":
+	check_trace_table = etl.fromcsv(CheckAgainFile)
+	events = set(etl.values(check_trace_table, "mseedname"))
+	files = []
+	for e in events:
+		files.append(glob("{0}/{1}.mseed".format(raw_data_folder, e))[0])
+	print files
 
 for f in files:
 	traces = read(f)
-	event_name = f.split(".mseed")[0].split("/")[-1]
-	print event_name
+	event_name_o = f.split(".mseed")[0].split("/")[-1]
+	print event_name_o
 	try:
-		inv = read_inventory("{0}/{1}.xml".format(raw_data_folder ,event_name))
-		d = datetime.datetime.strptime(event_name, '%Y-%m-%dT%H:%M:%S.%f')
-		d = d.strftime('%Y%m%d%H%M%S')
+		inv = read_inventory("{0}/{1}.xml".format(raw_data_folder ,event_name_o))
+		b = datetime.datetime.strptime(event_name_o, '%Y-%m-%dT%H:%M:%S.%f')
+		d = b.strftime('%Y%m%d%H%M%S')
 		event_name = d
 		
 	except:
@@ -50,6 +65,13 @@ for f in files:
 	id_dt = []
 
 	for tr in traces:
+		name = tr.get_id().replace(".", "_")
+		if check_trace_table:
+			table = etl.select(check_trace_table, lambda rec: rec.sta == name and rec.mseedname == event_name_o)
+			if etl.nrows(table) > 0:
+				pass
+			else: continue
+
 		tr.data = tr.data[:-1]
 		seismograph = inv.get_channel_metadata(tr.get_id())
 		distance = metaData.calculate_distance(seismograph, epiLocation)
@@ -88,7 +110,7 @@ for f in files:
 			if value == "n":
 				print "unknow trace, move to {0} folder".format(CheckAgainFolder)
 				time, acc, freq, ampli, N, k = show_graph.get_ori_data()
-				save_traces.svaeCheckAgain(traces, event_name, name, time, acc, freq, ampli, N)
+				save_traces.svaeCheckAgain(traces, event_name, name, time, acc, freq, ampli, N, event_name_o)
 
 			else:
 				filters = show_graph.getfilters()
