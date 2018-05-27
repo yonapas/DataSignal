@@ -8,19 +8,21 @@ from glob import glob
 import save_traces
 
 
-def func(x, a1, a2, a3, a4, a5, a6):
+def func(x, a1, a2, a3, a4, a5):
 	func = a1*x**2+a2*x**3+a3*x**4+a4*x**5+a5*x**6
 	return func
+
 
 def xdataCorrection(xdata, ydata):
 	if (len(xdata) - len(ydata) == 1):
 		xdata = xdata[:1]
 	return xdata
 
+
 def useBaseLine(trace, nevent, sta):
 	"""
 	the funcation get filterd trace (after proccesing)
-	and do "baseline tapaer". for data in disp domain
+	and doing "baseline tapaer"- for data in disp domain
 
 	return:
 	trace in acceleration domain.

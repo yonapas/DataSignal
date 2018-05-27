@@ -1,6 +1,11 @@
 import numpy as np
+from glob import glob
 from datetime import datetime
 from obspy.geodetics import gps2dist_azimuth
+import settings, os
+
+trash = settings.CheckAgainFile
+bin = settings.CheckAgainFolder
 
 beta = 3600.0  # m/s sheer wave velocity
 dSigma = 4.0  # Stress-drop
@@ -47,6 +52,7 @@ def find_eq_details(date):
 				mw = float(line[-2])
 			return {"mw": mw, "epi_center": epi_center}
 
+
 def calculate_distance(staloc, eventloc):
 	sta_lat = staloc["latitude"]
 	sta_lng = staloc["longitude"]
@@ -61,8 +67,9 @@ def calculate_distance(staloc, eventloc):
 def double_integrate(acc, dt):
 	velocity = [0]
 	disp = [0]
+	acc_g = acc/9.81 # convert to g units
 
-	for a in acc:
+	for a in acc_g:
 		velocity.append(velocity[-1] + a * dt)
 	del velocity[0]
 
@@ -75,3 +82,21 @@ def double_integrate(acc, dt):
 	PGA = max(np.abs(acc))
 
 	return {"PGA": PGA, "PGV": PGV, "PGD": PGD}
+
+
+def movefromtrash(event, sta):
+	trash_csv = open(trash, "r").readlines()
+	new_trash = open(trash, "w")
+
+	for line in trash_csv:
+		if event in line and sta in line:
+			pass
+		else:
+			new_trash.write(line)
+
+	for filename in glob("{0}/{1}_{2}*".format(bin, event, sta)):
+		os.remove(filename)
+
+
+def loadStationData(inv):
+	pass

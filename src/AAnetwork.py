@@ -9,14 +9,18 @@ station_list = etl.convert(station_list, 'type', 'lower')
 
 def getStationType(name):
 
-	if name in list(etl.values(station_list, "code")):
-		lkp = etl.lookupone(station_list, "code", "type")
-		return lkp[name]
-	else:
-		lkp = etl.lookupone(station_list, "oldCode", "code")
-		newCode = lkp[name]
-		lkp = etl.lookupone(station_list, "code", "type")
-		return lkp[newCode]
+	try:
+
+		if name in list(etl.values(station_list, "code")):
+			lkp = etl.lookupone(station_list, "code", "type")
+			return lkp[name]
+		else:
+			lkp = etl.lookupone(station_list, "oldCode", "code")
+			newCode = lkp[name]
+			lkp = etl.lookupone(station_list, "code", "type")
+			return lkp[newCode]
+	except :
+		return "unknown"
 
 
 def getDefaultFilter(name):

@@ -22,7 +22,7 @@ check_trace_table = False
 files = []
 
 if mode == "MAIN":
-	files = glob("{0}/*914.mseed".format(raw_data_folder))
+	files = glob("{0}/*912.mseed".format(raw_data_folder))
 	dt_list = {}
 
 if mode == "CHECK":
@@ -50,6 +50,7 @@ for f in files:
 	details = metaData.find_eq_details(event_name)
 	# fc = magnitude.calc_fc(details["mw"])
 	epiLocation = details["epi_center"]
+	# metaData.loadStationData(inv)
 
 	try:
 		# try to create new folder for saved traces
@@ -85,12 +86,11 @@ for f in files:
 			seismograph["type"] = None
 
 		if seismograph["network"] == "AA":
-			seismograph["type"] = AAnetwork.getStationType()
+			seismograph["type"] = AAnetwork.getStationType(seismograph["station"])
 
 			if "H" in seismograph["channel"][1]:
 				print "skipping H channel..."
 				continue
-
 
 		dt = float(tr.meta["delta"])
 
@@ -110,7 +110,7 @@ for f in files:
 			if value == "n":
 				print "unknow trace, move to {0} folder".format(CheckAgainFolder)
 				time, acc, freq, ampli, N, k = show_graph.get_ori_data()
-				save_traces.svaeCheckAgain(traces, event_name, name, time, acc, freq, ampli, N, event_name_o)
+				save_traces.svaeCheckAgain(event_name, name, time, acc, freq, ampli, N, event_name_o)
 
 			else:
 				filters = show_graph.getfilters()
@@ -140,3 +140,4 @@ for f in files:
 
 				save_traces.saveTraceFlatFile(tr_baseline, event_name, seismograph, details, flatfile_data, filters,
 											  distance, peak_ground, epiLocation)
+				metaData.movefromtrash(event_name, name)

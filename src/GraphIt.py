@@ -28,6 +28,7 @@ class graph():
 		self.xpickfirst = None
 		self.xpicksecound = None
 		self.presskey = None
+		self.yf_graph = None
 
 
 	def init_graph(self):
@@ -85,11 +86,11 @@ class graph():
 		"""
 		run after change or filters
 		"""
-		yy = 2.0/self.N * np.abs(self.yf[0:self.N//2])
-		smoo_y = smooth.smoo(yy, 101)
+		smoo_y = smooth.smoo(self.yf_graph, 101)
 
-		self.ax1.plot(self.x, self.y, 'k', picker=7)
-		self.ax2.loglog(self.xf, 2.0/self.N * np.abs(self.yf[0:self.N//2]), "k", picker=2)
+		self.ax1.plot(self.x, self.y/G, 'k', picker=7)
+		# self.ax2.loglog(self.xf, 2.0/self.N * np.abs(self.yf[0:self.N//2]), "k", picker=2)
+		self.ax2.loglog(self.xf, self.yf_graph, "k", picker=2)
 		self.ax2.loglog(self.xf, smoo_y, linewidth=1.0)
 
 	def reset(self):
@@ -202,7 +203,7 @@ class graph():
 		Ts = self.trace.stats.delta # sampling interval
 		Fs = 1/Ts # sampling rate
 		
-		y = self.trace.data/G
+		y = self.trace.data
 		n = len(y)
 		t = np.arange(0, n*Ts, Ts) # time vector
 		k = np.arange(n)
@@ -222,6 +223,7 @@ class graph():
 		self.xf = freq
 		self.y = y
 		self.N = n
+		self.yf_graph = np.abs(self.yf[0:n // 2])
 
 	@staticmethod
 	def close():
