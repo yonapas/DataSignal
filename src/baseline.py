@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy import integrate
 from obspy import read, read_inventory
 from glob import glob
-import save_traces
+import save_traces_
 
 
 def func(x, a1, a2, a3, a4, a5):
@@ -14,8 +14,8 @@ def func(x, a1, a2, a3, a4, a5):
 
 
 def xdataCorrection(xdata, ydata):
-	if (len(xdata) - len(ydata) == 1):
-		xdata = xdata[:1]
+	if len(xdata) - len(ydata) == 1:
+		xdata = xdata[:-1]
 	return xdata
 
 
@@ -35,6 +35,7 @@ def useBaseLine(trace, nevent, sta):
 
 	dt = trace.stats.delta
 	xdata = np.arange(0, len(acc)*dt, dt)
+	print xdata
 
 	# double integrate:
 	for a in acc:
@@ -51,14 +52,12 @@ def useBaseLine(trace, nevent, sta):
 	dispBL = func(xdata, *popt)
 
 	# secound derivative for dispBaseLine (fit function)
-	velocityBL = np.diff(dispBL)/ np.diff(xdata)
-	accBL = np.diff(velocityBL)/ np.diff(xdata[:-1])
+	velocityBL = np.diff(dispBL)/np.diff(xdata)
+	accBL = np.diff(velocityBL)/np.diff(xdata[:-1])
 
-	# subtractsthe second  derivative of the fitted  polynomial from the acceleration  
+	# subtractsthe second  derivative of the fitted  polynomial from the acceleration
 	newAcc = acc[:-2] - accBL
-
-	save_traces.SaveBaseline(acc, disp, newAcc, dispBL, xdata, nevent, sta)
-
+	save_traces_.SaveBaseline(acc, disp, newAcc, dispBL, xdata, nevent, sta)
 	trace_baseline.data = newAcc
 
 	return trace_baseline
