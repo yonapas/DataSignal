@@ -14,7 +14,7 @@ class MseedExtractor():
 
 	def get_file(self):
 		if self.mode == "MAIN":
-			files = glob("{0}/*914.mseed".format(raw_data_folder))
+			files = glob("{0}/2008-12*.mseed".format(raw_data_folder))
 
 		if self.mode == "CHECK":
 			check_trace_table = etl.fromcsv(CheckAgainFile)

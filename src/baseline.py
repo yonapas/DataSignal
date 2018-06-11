@@ -35,8 +35,6 @@ def useBaseLine(trace, nevent, sta):
 
 	dt = trace.stats.delta
 	xdata = np.arange(0, len(acc)*dt, dt)
-	print xdata
-
 	# double integrate:
 	for a in acc:
 		velocity.append(velocity[-1] + a*dt)

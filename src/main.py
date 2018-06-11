@@ -29,7 +29,7 @@ for f in files:
 	print event_name_o
 	try:
 		inv = read_inventory("{0}/{1}.xml".format(raw_data_folder ,event_name_o))
-		b = datetime.datetime.strptime(event_name_o, '%Y-%m-%dT%H:%M:%S.%f')
+		b = datetime.datetime.strptime(event_name_o, '%Y-%m-%dT%H:%M:%S')
 		d = b.strftime('%Y%m%d%H%M%S')
 		event_name = d
 		
@@ -52,6 +52,7 @@ for f in files:
 
 	# merge traces by ID
 	traces.merge(1, fill_value='interpolate')
+	print len(traces)
 	id_dt = []
 
 	for tr in traces[20:]:
@@ -63,7 +64,10 @@ for f in files:
 			else: continue
 
 		tr.data = tr.data[:-1]
-		seismograph = inv.get_channel_metadata(tr.get_id())
+		try:
+			seismograph = inv.get_channel_metadata(tr.get_id())
+		except:
+			print "no inv data"
 		distance = metaData.calculate_distance(seismograph, epiLocation)
 		seismograph["network"] = tr.meta["network"]
 		seismograph["station"] = tr.meta["station"]
@@ -80,6 +84,9 @@ for f in files:
 			if "H" in seismograph["channel"][1]:
 				print "skipping H channel..."
 				continue
+
+		if seismograph["network"] == "GE":
+			continue
 
 		dt = float(tr.meta["delta"])
 

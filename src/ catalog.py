@@ -1,10 +1,10 @@
 import download_mseed 
-from datetime import datetime 
+from datetime import datetime
 
 
 def ConvertType(eqinfo):
 
-	eqinfo["Date"] = eqinfo["Date"]
+	eqinfo["Date"] = datetime.strptime(eqinfo["Date"], "%m/%d/%Y")
 	eqinfo["Time(UTC)"] =eqinfo["Time(UTC)"]
 	eqinfo["Millisecond"] = int(eqinfo["Millisecond"])
 	eqinfo["Md"] = float(eqinfo["Md"])
@@ -25,17 +25,18 @@ print category
 # delete heas line from catalog
 del smallEQ[0], bigEQ[0]
 
-for EQ in bigEQ:
+for EQ in smallEQ:
 	try:
 		eq_data = EQ.split('\n')[0].split(',')
 		eq_data = dict(zip(category, eq_data))
 
-		# orgenaize data by type 
+		# orgenaize data by type
 		eq_data = ConvertType(eq_data)
 
 		# try to download mseed file from website
-		
-		Date = "{0}T{1}.{2}".format(eq_data["Date"], eq_data["Time(UTC)"], eq_data["Millisecond"])
+		date =eq_data["Date"]
+
+		Date = "{0}-{1}-{2}T{3}".format(date.year, date.month, date.day, eq_data["Time(UTC)"])
 		download_mseed.getMseedFromWeb(eq_data["Md"], Date)
 	except:
 		print Date
