@@ -1,7 +1,6 @@
 import numpy as np
 from numba import jit
 
-
 @jit
 def smoo(y, window):
     a = np.zeros(len(y))

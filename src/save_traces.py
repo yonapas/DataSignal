@@ -8,7 +8,6 @@ import csv
 from datetime import datetime
 from numpy import interp
 
-G = 9.81 # m/s^2
 
 saved_data_folder = settings.save_data_folder
 dpi = settings.save_fig_dpi
@@ -39,15 +38,15 @@ class Save():
 	def save_check_again(self, time, acc, freq, amp, N, eno):
 		mpl.rcParams.update({'font.size': 6})
 
-		f = open(checkAgainFile, 'r+b')
-		f.write("{0},{1},{2}".format(self.event_name, eno, self.name))
+		f = open(checkAgainFile, 'a')
+		f.write("{0},{1},{2}\n".format(self.event_name, eno, self.name))
 		f.close()
 
 		fig, (ax, ax1) = plt.subplots(2, 1)
 		fig.suptitle("Time Domain and Freq Domain")
 
 		ax.plot(time, acc)
-		ax1.loglog(freq, np.abs(amp[0:N//2]))
+		ax1.loglog(freq, amp)
 		ax.set_xlabel("time [sec]")
 		ax.set_ylabel("Acceleration [g]")
 		ax.set_title("{0} {1}".format(self.event_name, self.name))
@@ -81,8 +80,8 @@ class Save():
 	def save_plot_ori_new(self, Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, filters):
 
 		mpl.rcParams.update({'font.size': 6})
-		PGA_raw = max(np.abs(acc/G))
-		PGA_filter = max(np.abs(Facc/G))
+		PGA_raw = max(np.abs(acc))
+		PGA_filter = max(np.abs(Facc))
 		# save plot:
 		fig, axarr = plt.subplots(2, 2)
 		fig.suptitle('{0} {1} ,dt:{2}'.format(self.name, self.event_name, dt), fontsize=14, fontweight='bold')
@@ -94,15 +93,15 @@ class Save():
 
 		axarr[0,0].set_xlabel("time [sec]\n PGA {0} g".format(PGA_raw))
 		axarr[0,0].set_ylabel("ACC [g]")
-		axarr[0,0].plot(time, acc/G, "k")
+		axarr[0,0].plot(time, acc, "k")
 
-		axarr[0,1].loglog(freq, np.abs(ampli[0:N//2]), "k")
+		axarr[0,1].loglog(freq, ampli, "k")
 
-		axarr[1,0].plot(Ftime, Facc/G)
+		axarr[1,0].plot(Ftime, Facc)
 		axarr[1,0].set_xlabel("time [sec]\n PGA {0} g".format(PGA_filter))
 		axarr[1,0].set_ylabel("ACC [g]")
 
-		axarr[1,1].loglog(Ffreq, np.abs(Fampli[0:FN//2]))
+		axarr[1,1].loglog(Ffreq, Fampli)
 
 		if filters["highpass"] or filters["lowpass"]:
 			axarr[1,1].text(0.95, 0.01, 'highpass = {0} lowpass = {1}'.format(filters["highpass"], filters["lowpass"]),
@@ -132,7 +131,7 @@ class Save():
 		date = datetime.strptime(self.event_name, '%Y%m%d%H%M%S')
 		valuesdict["YEAR"] = str(date.year)
 		valuesdict["MODY"] = "{0}{1}".format(date.strftime('%m'), date.strftime('%d'))
-		valuesdict["HRMN"] = "{0}{1}".format(date.strftime('%H'), date.strftime('%S'))
+		valuesdict["HRMN"] = "{0}{1}".format(date.strftime('%H'), date.strftime('%M'))
 		valuesdict["Earthquake Magnitude"] = magnituda["mw"]
 		valuesdict["EpiD      (km)"] = distance
 		valuesdict["Station Latitude"] = station_detils["latitude"]
@@ -172,6 +171,8 @@ class Save():
 			else:
 				print item
 
+		print "save trace"
+
 		output = csv.DictWriter(open(catalogfile, 'a'), delimiter=',', lineterminator='\n', fieldnames=headers)
 		output.writerow(valuesdict)
 
@@ -198,12 +199,22 @@ class Save():
 
 	@staticmethod
 	def interpulate(x, y, dt, N):
-		Y = np.abs(y[0:N // 2])
-		priod_value = settings.interpulate_value
-		if dt == 0.025:
-			priod_value = sorted(i for i in priod_value if i <= 20.0)
+		"""
 
-		new_value = interp(priod_value, x, Y)
-		ground_motion = zip(priod_value, new_value)
-		ground_motion = sorted(ground_motion, key=lambda point: point[0])
+		:param x: Amplitude after filter
+		:param y: Freq after filter
+		:param dt: Delta time
+		:param N: Number of points
+
+		:return: Dictionry of interpulated value to FAS
+		"""
+
+		# Y = np.abs(y[0:(N // 2)+1]) # normalize freq
+		priod_value = settings.interpulate_value # values to interpulate
+		if dt == 0.025:
+			priod_value = sorted(i for i in priod_value if i <= 20.0) # if dt = 0.025 s --> interpulate max 20 Hz
+
+		new_value = interp(priod_value, x, y) # numpy interpulation
+		ground_motion = zip(priod_value, new_value) # match x to y ((x1,y1), (x2,y2)....)
+		ground_motion = sorted(ground_motion, key=lambda point: point[0]) # sorted x-y
 		return dict(ground_motion)

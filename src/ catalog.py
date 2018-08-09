@@ -25,7 +25,7 @@ print category
 # delete heas line from catalog
 del smallEQ[0], bigEQ[0]
 
-for EQ in smallEQ:
+for EQ in bigEQ:
 	try:
 		eq_data = EQ.split('\n')[0].split(',')
 		eq_data = dict(zip(category, eq_data))

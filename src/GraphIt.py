@@ -5,7 +5,6 @@ import smooth
 
 G = 9.81
 
-
 class graph():
 
 	def __init__(self, tr, dt, name, ename, d):
@@ -28,7 +27,7 @@ class graph():
 		self.xpickfirst = None
 		self.xpicksecound = None
 		self.presskey = None
-		self.yf_graph = None
+		# self.yf_graph = None
 
 
 	def init_graph(self):
@@ -48,7 +47,8 @@ class graph():
 		self.fig.canvas.mpl_connect('key_press_event', self.press)
 
 		manager = plt.get_current_fig_manager()
-		manager.resize(*manager.window.maxsize())
+		# manager.resize(*manager.window.maxsize())
+		manager.full_screen_toggle()
 
 		if self.lowpass or self.highpass or self.tstop:
 			pass
@@ -86,11 +86,10 @@ class graph():
 		"""
 		run after change or filters
 		"""
-		smoo_y = smooth.smoo(self.yf_graph, 101)
+		smoo_y = smooth.smoo(self.yf, 101)
 
-		self.ax1.plot(self.x, self.y/G, 'k', picker=7)
-		# self.ax2.loglog(self.xf, 2.0/self.N * np.abs(self.yf[0:self.N//2]), "k", picker=2)
-		self.ax2.loglog(self.xf, self.yf_graph, "k", picker=2)
+		self.ax1.plot(self.x, self.y, 'k', picker=7)
+		self.ax2.loglog(self.xf, self.yf, "k", picker=2)
 		self.ax2.loglog(self.xf, smoo_y, linewidth=1.0)
 
 	def reset(self):
@@ -150,6 +149,7 @@ class graph():
 		self.set_notes()
 		self.set_data()
 		self.set_titles()
+		self.fig.canvas.draw()
 		plt.show()
 	
 	def cutTime(self):
@@ -180,11 +180,13 @@ class graph():
 			verticalalignment='bottom', horizontalalignment='right',
 			transform=self.ax1.transAxes,
 			color='red', fontsize=10)
+		return
 
 	def getfilters(self):
 		return {"tstop": self.tstop, "lowpass": self.lowpass, "highpass": self.highpass}
 
 	def getfiltertrace(self):
+		self.trace.data = self.trace.data / G
 		return self.trace
 
 	def get_Filter_data(self):
@@ -209,21 +211,24 @@ class graph():
 		k = np.arange(n)
 		T = n/Fs
 		
-		freq = k/T
-		freq = freq[range(n/2)]
+		# freq = k/T
+		# freq = freq[range(n/2)]
 
-		yf = np.fft.fft(y)*2/n
-		# yf = fft(y)
-		self.yf = yf[range(n/2)]
+		xf = np.fft.rfftfreq(n, Ts)
+
+		self.yf = np.abs(np.fft.rfft(y))
+		# yf = np.fft.fft(y)
+
+		# self.yf = yf[range(n/2)]
 		# xf = np.linspace(0.0, 1/(dt), N//2)
 
 		if (len(t)-len(y) == 1):
 			t = t[:-1]
 		self.x = t
-		self.xf = freq
+		self.xf = xf
 		self.y = y
 		self.N = n
-		self.yf_graph = np.abs(self.yf[0:n // 2])
+		# self.yf_graph = np.abs(self.yf[0:(n // 2)+1])
 
 	@staticmethod
 	def close():

@@ -19,7 +19,7 @@ def getMseedFromWeb(magnituda, date):
 	# fedine origin time `ot`
 	# ot = UTCDateTime(year, month, day, hour, minu, sec, microsec)
 	ot = UTCDateTime(date)
-	print ot
+	# print ot
 
 	# if high magnitude, download AA net too.
 	if magnituda >= HIGH_MAGNITUDE:
