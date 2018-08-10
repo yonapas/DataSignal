@@ -147,6 +147,7 @@ class Save():
 		valuesdict["Station Type"] = station_detils["type"]
 		valuesdict["Station Name"] = self.name
 		valuesdict["Record Sequence Number"] = self.get_n_row()+1
+		valuesdict["Component"] = station_detils["channel"]
 
 		exist_row = self.existtrace(valuesdict)
 		if exist_row:
@@ -170,8 +171,8 @@ class Save():
 				valuesdict[str(item) + "00"] = motion[item]
 			else:
 				print item
-
-		print "save trace"
+		# ToDo:
+		# save traces in MongoDb
 
 		output = csv.DictWriter(open(catalogfile, 'a'), delimiter=',', lineterminator='\n', fieldnames=headers)
 		output.writerow(valuesdict)

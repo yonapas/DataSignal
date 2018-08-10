@@ -90,6 +90,11 @@ for f in files:
 
 		dt = float(tr.meta["delta"])
 
+		if seismograph["network"] == "GE" or dt == 0.02:
+			# ToDo : Ge process, acc unit
+			id_dt.append(tr.get_id())
+			continue
+
 		if seismograph["network"] == "IS":
 			pre_filt = (0.005, 0.006, 30.0, 35.0)
 			tr.remove_response(inventory=inv, output=TYPE, pre_filt=pre_filt)
@@ -101,10 +106,6 @@ for f in files:
 			if "H" in seismograph["channel"][1]:
 				print "skipping H channel..."
 				continue
-
-		if seismograph["network"] == "GE" or dt == 0.02:
-			id_dt.append(tr.get_id())
-			continue
 
 		save = Save(tr, event_name)
 		pre_filter_parameters = dofft(tr)
@@ -124,7 +125,6 @@ for f in files:
 			show_graph.dofft()
 			show_graph.init_graph()
 			value = show_graph.get_key()
-			show_graph.close()
 
 			if value == "n":
 				print "unknow trace, move to {0} folder".format(CheckAgainFolder)
@@ -132,6 +132,7 @@ for f in files:
 				if mode == "MAIN":
 					save.save_check_again(time, acc, freq, ampli, N, event_name_o)
 				if mode == "CHECK":
+					# ToDo : rebuild function, for absolutely trash trace and temp trash trace
 					raw_bin = {"event": event_name, "network": seismograph["network"], "station": seismograph["station"],
 							"channel": seismograph["channel"], "distance": distance, "magnitude [mw]": details["mw"]}
 					trace_bin.tracebin(raw_bin)
@@ -143,17 +144,16 @@ for f in files:
 				tr_filter = show_graph.getfiltertrace()
 
 				if show_graph.usefilters():
-					## ToDo: check if user pick filters, if not, set default, at close() function
 					Ftime, Facc, Ffreq, Fampli, FN = show_graph.get_Filter_data()
 
 		tr_baseline = baseline.useBaseLine(tr_filter, event_name, name)
 		save.trace = tr_baseline
 
 		# save data
-		print "save trace with filters: ", filters
 		save.save_plot_ori_new(Ftime, Facc, Ffreq, Fampli, FN, time, acc, freq, ampli, dt, N, filters)
 
 		peak_ground = metaData.double_integrate(tr_baseline.data, dt)
+
 		flatfile_data = Save.interpulate(Ffreq, Fampli, dt, FN)
 		save.save_traces_in_file()
 		# Save.save_meta_data()

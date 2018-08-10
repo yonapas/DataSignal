@@ -8,6 +8,8 @@ raw_data_folder = settings.raw_data_folder
 CheckAgainFile = settings.CheckAgainFile
 files = []
 
+G = 9.81
+
 
 class MseedExtractor():
 
@@ -31,7 +33,7 @@ class MseedExtractor():
 class CheckAgain():
 	def __init__(self):
 		self.binfile= settings.TraceBinFie
-		self.header =  open(self.binfile, "r").readlines()[0].split(",")
+		self.header = open(self.binfile, "r").readlines()[0].split(",")
 
 	def tracebin(self, tracedict):
 		f = csv.DictWriter(open(self.binfile, 'a'), delimiter=',', lineterminator='\n', fieldnames=self.header)
@@ -47,7 +49,7 @@ class CorrectTrace():
 		self.oriparm = None
 
 	def load_event_data(self, year, mo_day, hour):
-		self.eventtable = etl.select(self.table, lambda rec: rec.YEAR ==  year and rec.MODY == mo_day and rec.HRMN == hour)
+		self.eventtable = etl.select(self.table, lambda rec: rec.YEAR == year and rec.MODY == mo_day and rec.HRMN == hour)
 		self.lookup_filters = etl.lookup(self.eventtable, "Station Name", ("HP (Hz)", "LP (Hz)"))
 
 	def filters_exist(self, sta):
@@ -69,6 +71,7 @@ class CorrectTrace():
 		Fparam = dofft(trace)
 		Ftime, Facc, Ffreq, Fampli, FN = Fparam["x"], Fparam["y"], Fparam["xf"], Fparam["yf"], Fparam["N"]
 		filters = {"highpass": highpass, "lowpass": lowpass, "tstop": None}
+		trace.data = trace.data / G
 
 		return Ftime, Facc, Ffreq, Fampli, FN, filters, trace
 

@@ -2,8 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib as mpl
 import smooth
+import settings
 
 G = 9.81
+
+DEFAULT_LOWPASS = settings.default_lowpass
+DEFUALT_HIGHPASS = settings.default_highpass
 
 class graph():
 
@@ -120,6 +124,11 @@ class graph():
 
 	def press(self, event):
 		self.key = event.key
+
+		if not self.usefilters():
+			self.lowpass = DEFAULT_LOWPASS
+			self.highpass = DEFUALT_HIGHPASS
+
 		if self.key == "escape":
 			self.close()
 			self.reset()
@@ -196,7 +205,8 @@ class graph():
 		return self.timeOri, self.accOri, self.freqOri, self.ampliOri, self.NOri, self.trOri
 
 	def usefilters(self):
-		if self.tstop or self.lowpass or self.highpass:
+		# should be always yes
+		if self.lowpass or self.highpass:
 			return True
 		else:
 			return False

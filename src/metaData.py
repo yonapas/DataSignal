@@ -65,11 +65,16 @@ def calculate_distance(staloc, eventloc):
 
 
 def double_integrate(acc, dt):
+	"""
+
+	:param acc: data in g unit!
+	:param dt:
+	:return: PGA PGV PGD
+	"""
 	velocity = [0]
 	disp = [0]
-	acc_g = acc/9.81 # convert to g units
 
-	for a in acc_g:
+	for a in acc:
 		velocity.append(velocity[-1] + a * dt)
 	del velocity[0]
 
