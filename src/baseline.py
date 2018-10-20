@@ -1,11 +1,5 @@
-import numpy as np 
-from numpy import diff
+import numpy as np
 from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt
-from scipy import integrate
-from obspy import read, read_inventory
-from glob import glob
-import save_traces_
 
 
 def func(x, a1, a2, a3, a4, a5):
@@ -19,7 +13,7 @@ def xdataCorrection(xdata, ydata):
 	return xdata
 
 
-def useBaseLine(trace, nevent, sta):
+def useBaseLine(trace):
 	"""
 	the funcation get filterd trace (after proccesing)
 	and doing "baseline tapaer"- for data in disp domain
@@ -55,7 +49,6 @@ def useBaseLine(trace, nevent, sta):
 
 	# subtractsthe second  derivative of the fitted  polynomial from the acceleration
 	newAcc = acc[:-2] - accBL
-	save_traces_.SaveBaseline(acc, disp, newAcc, dispBL, xdata, nevent, sta)
 	trace_baseline.data = newAcc
 
 	return trace_baseline

@@ -14,8 +14,6 @@ def StationExist(catalog, sta):
 	channel = sta["channel"]
 
 
-	pass
-
 
 def addStation(station):
 	pass

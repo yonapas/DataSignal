@@ -212,25 +212,15 @@ class graph():
 			return False
 
 	def dofft(self):
+
 		Ts = self.trace.stats.delta # sampling interval
-		Fs = 1/Ts # sampling rate
-		
 		y = self.trace.data
 		n = len(y)
 		t = np.arange(0, n*Ts, Ts) # time vector
-		k = np.arange(n)
-		T = n/Fs
-		
-		# freq = k/T
-		# freq = freq[range(n/2)]
 
 		xf = np.fft.rfftfreq(n, Ts)
 
 		self.yf = np.abs(np.fft.rfft(y))
-		# yf = np.fft.fft(y)
-
-		# self.yf = yf[range(n/2)]
-		# xf = np.linspace(0.0, 1/(dt), N//2)
 
 		if (len(t)-len(y) == 1):
 			t = t[:-1]
@@ -238,7 +228,6 @@ class graph():
 		self.xf = xf
 		self.y = y
 		self.N = n
-		# self.yf_graph = np.abs(self.yf[0:(n // 2)+1])
 
 	@staticmethod
 	def close():

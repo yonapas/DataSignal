@@ -8,8 +8,6 @@ raw_data_folder = settings.raw_data_folder
 CheckAgainFile = settings.CheckAgainFile
 files = []
 
-G = 9.81
-
 
 class MseedExtractor():
 
@@ -18,17 +16,17 @@ class MseedExtractor():
 
 	def get_file(self):
 		if self.mode == "MAIN":
-			files = glob("{0}/2008-10-19*.mseed".format(raw_data_folder))
+			files = glob("{0}/2017-1*.mseed".format(raw_data_folder))
 
 		if self.mode == "CHECK":
 			check_trace_table = etl.fromcsv(CheckAgainFile)
-			print check_trace_table
 			events = set(etl.values(check_trace_table, "mseedname"))
 			files = []
 			for e in events:
 				files.append(glob("{0}/{1}.mseed".format(raw_data_folder, e))[0])
 
 		return files
+
 
 class CheckAgain():
 	def __init__(self):

@@ -29,4 +29,3 @@ def getDefaultFilter(name):
 	else:
 		return None
 
-# print getStationType("ARD")

@@ -1,8 +1,10 @@
-import numpy as np
-from glob import glob
 from datetime import datetime
+from glob import glob
+
+import numpy as np
+import os
+import settings
 from obspy.geodetics import gps2dist_azimuth
-import settings, os
 
 trash = settings.CheckAgainFile
 bin = settings.CheckAgainFolder
@@ -42,8 +44,7 @@ def find_eq_details(date):
 	for line in allEQ:
 		line = line.split(",")
 		t_file = datetime.strptime(line[0], '%m/%d/%Y')
-		t_eq = datetime.strptime(date, '%Y%m%d%H%M%S')
-		if compare_dates(t_eq, t_file):
+		if compare_dates(date, t_file):
 			epi_center = {"lat": float(line[6]), "long": float(line[7])}
 			mw = line[-1].split("\\")[0]
 			try:
@@ -103,5 +104,3 @@ def movefromtrash(event, sta):
 		os.remove(filename)
 
 
-def loadStationData(inv):
-	pass

@@ -38,7 +38,7 @@ def getMseedFromWeb(magnituda, date):
 	inventory = flink.get_stations(ot-1, ot+550, network=get_networks, station='*', location='*', channel='???', level='response')
 	# save inventory to an xml file. format may be STATIONXML, SACPZ for SAC poles and zeros format
 	inventory.write('{0}/{1}.xml'.format(raw_data_folder,filename), format='STATIONXML')
-	print "download file", filename
-	######################## copy ends here ############################
+	print("download file", filename)
+######################## copy ends here ############################
 
 # getMseedFromWeb(5.1, '1993-03-08T16:33:22')

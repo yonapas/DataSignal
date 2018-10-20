@@ -1,4 +1,4 @@
-Date,Time(UTC),Millisecond,Md,Mb,Mw,Lat,Long,Depth(Km),Region,Type,Mw,Mo,Mw,
+Date,Time(UTC),Millisecond,Md,Mb,Mw,Lat,Long,Depth(Km),Region,Type,Mw1,Mo,Mw2,
 12/31/1985,19:42:39,799,5.3,5,0,29.05,34.99,0,Saudi-Arabia,F,4.9,16.5471,5,
 12/31/1985,17:04:10,611,5.3,5.1,0,29.51,34.86,15,Arava,F,4.9,16.5471,5,
 8/3/1988,20:42:33,928,5,4.9,0,35.7041,35.7225,0,E.Mediter.Sea,EQ,4.6,16.02,4.6,

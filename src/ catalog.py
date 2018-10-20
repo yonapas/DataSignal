@@ -20,7 +20,7 @@ bigEQ = open('../catalog/rslt_M5to8_1985to2007.csv', 'r').readlines()
 
 # define catagory, same category in file 
 category = smallEQ[0].split(",")
-print category
+print(category)
 
 # delete heas line from catalog
 del smallEQ[0], bigEQ[0]
@@ -39,5 +39,5 @@ for EQ in bigEQ:
 		Date = "{0}-{1}-{2}T{3}".format(date.year, date.month, date.day, eq_data["Time(UTC)"])
 		download_mseed.getMseedFromWeb(eq_data["Md"], Date)
 	except:
-		print Date
+		print(Date)
 

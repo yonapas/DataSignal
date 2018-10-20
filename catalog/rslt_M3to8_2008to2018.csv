@@ -1,4 +1,4 @@
-Date,Time(UTC),Millisecond,Md,Mb,Mw,Lat,Long,Depth(Km),Region,Type,Mw,Mo,Mw
+Date,Time(UTC),Millisecond,Md,Mb,Mw,Lat,Long,Depth(Km),Region,Type,Mw1,Mo,Mw2
 1/4/2008,15:50:02,117,3.1,0,0,32.0764,35.4734,3,E.Shomron,EQ,2.9,13.4759,2.9
 1/5/2008,5:28:06,248,3.5,0,0,32.0732,36.2551,8,Northern-Jordan,EQ,3.3,13.8975,3.2
 1/28/2008,3:45:01,842,3.7,0,0,35.299,36.235,0,Yamune,EQ,3.4,14.1311,3.4
