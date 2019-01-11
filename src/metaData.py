@@ -43,15 +43,33 @@ def find_eq_details(date):
 
 	for line in allEQ:
 		line = line.split(",")
-		t_file = datetime.strptime(line[0], '%m/%d/%Y')
+		t_file = datetime.strptime(line[0],'%m/%d/%Y')
 		if compare_dates(date, t_file):
 			epi_center = {"lat": float(line[6]), "long": float(line[7])}
-			mw = line[-1].split("\\")[0]
+			# mw = line[-1].split("\\")[0]
+			mw = line[3]
 			try:
 				mw = float(mw)
 			except:
-				mw = float(line[-2])
+				mw = float(line[3])
 			return {"mw": mw, "epi_center": epi_center}
+
+
+def find_eq_details_2018(date):
+	eq_file = open("../catalog/rslt_M3to9_2018.csv", "r").readlines()
+	for line in eq_file[1:]:
+		line = line.split(",")
+		t_file = datetime.strptime(line[1], '%Y-%m-%dT%H:%M:%S.%f')
+		if compare_dates(date, t_file):
+			epi_center = {"lat": float(line[5]), "long": float(line[6])}
+			# mw = line[-1].split("\\")[0]
+			mw = line[4]
+			try:
+				mw = float(mw)
+			except:
+				mw = float(line[4])
+			return {"mw": mw, "epi_center": epi_center}
+
 
 
 def calculate_distance(staloc, eventloc):

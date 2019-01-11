@@ -1,6 +1,7 @@
 import numpy as np
 
 import matplotlib as mpl
+
 #mpl.use('Qt5Agg')
 
 import matplotlib.pyplot as plt
@@ -8,6 +9,7 @@ import settings
 import fileinput
 import petl as etl
 import csv
+from collections import OrderedDict
 from datetime import datetime
 from numpy import interp
 import logging
@@ -25,18 +27,19 @@ priod_value = settings.interpulate_value
 
 class Save():
 
-	def __init__(self, trace, ename):
+	def __init__(self, trace, ename, mongo):
 		self.event_name = ename
 		self.trace = trace
 		self.name = self.trace.get_id().replace(".", "_")
 		self.sta = self.name.split("_")[1]
 		self.dt = self.trace.stats.delta
+		self.mongo = mongo
 
 	def save_traces_in_file(self):
 		self.trace.write("{0}/{1}/{2}_data.txt".format(saved_data_folder, self.event_name, self.name),
 						 format=save_format)
 
-		headers = "unit (m/s^2), dt {0}".format(self.dt).split()
+		headers = "unit (g), dt {0}".format(self.dt).split()
 		for line in fileinput.input(["{0}/{1}/{2}_data.txt".format(saved_data_folder, self.event_name, self.name)],
 									inplace=True):
 			if fileinput.isfirstline():
@@ -103,14 +106,14 @@ class Save():
 		axarr[1, 1]._label = "FilterFrequncy"
 
 		axarr[0, 0].set_xlabel("time [sec]\n PGA {0} g".format(PGA_raw))
-		axarr[0, 0].set_ylabel("ACC [g]")
+		axarr[0, 0].set_ylabel("ACC [m/s^2]")
 		axarr[0, 0].plot(time, acc, "k")
 
 		axarr[0, 1].loglog(freq, ampli, "k")
 
 		axarr[1, 0].plot(Ftime, Facc)
-		axarr[1, 0].set_xlabel("time [sec]\n PGA {0} g".format(PGA_filter))
-		axarr[1, 0].set_ylabel("ACC [g]")
+		axarr[1, 0].set_xlabel("time [sec]\n PGA {0} m/s^2".format(PGA_filter))
+		axarr[1, 0].set_ylabel("ACC [m/s^2]")
 
 		axarr[1, 1].loglog(Ffreq, Fampli)
 
@@ -147,7 +150,7 @@ class Save():
 		valuesdict["MODY"] = "{0}{1}".format(date.strftime('%m'), date.strftime('%d'))
 		valuesdict["HRMN"] = "{0}{1}".format(date.strftime('%H'), date.strftime('%M'))
 		valuesdict["Earthquake Magnitude"] = magnituda["mw"]
-		valuesdict["EpiD      (km)"] = distance
+		valuesdict["EpiD(km)"] = distance
 		valuesdict["Station Latitude"] = station_detils["latitude"]
 		valuesdict["Station Longitude"] = station_detils["longitude"]
 		valuesdict["PGA (g)"] = peak["PGA"]
@@ -160,11 +163,11 @@ class Save():
 		valuesdict["Station Network"] = station_detils["network"]
 		valuesdict["Station Type"] = station_detils["type"]
 		valuesdict["Station Name"] = self.sta
-		valuesdict["Record Sequence Number"] = self.get_n_row() + 1
+		valuesdict["Record Sequence Number"] = self.mongo.count() + 1
 		valuesdict["Component"] = station_detils["channel"]
 		valuesdict["Depth"] = station_detils["local_depth"]
 
-		exist_row = self.existtrace(valuesdict)
+		exist_row = False
 		if exist_row:
 			f = open(catalogfile, 'r').readlines()
 			fn = open(catalogfile, "w")
@@ -176,9 +179,7 @@ class Save():
 			valuesdict["Record Sequence Number"] = exist_row[0]
 
 		for item in motion:
-			if item == 0.01:
-				valuesdict["f 0.01 Hz"] = motion[item]
-			elif str(item) in valuesdict.keys():
+			if str(item) in valuesdict.keys():
 				valuesdict[str(item)] = motion[item]
 			elif str(item) + "0" in valuesdict.keys():
 				valuesdict[str(item) + "0"] = motion[item]
@@ -186,26 +187,34 @@ class Save():
 				valuesdict[str(item) + "00"] = motion[item]
 			else:
 				logging.error(item)
-		# ToDo:
-		# save traces in MongoDb
+
+		valuesdict_mongo = self.prepare_to_mongo(valuesdict)
+		self.mongo.insert_ff(valuesdict_mongo)
 
 		output = csv.DictWriter(open(catalogfile, 'a'), delimiter=',', lineterminator='\n', fieldnames=headers)
 		output.writerow(valuesdict)
 
 	@staticmethod
-	def existtrace(dict):
-		existtabel = etl.fromcsv(catalogfile)
-		if etl.nrows(existtabel) < 1:
-			return False
-		lkp = etl.lookup(existtabel, ("Station Name", "YEAR", "MODY", "HRMN"), "Record Sequence Number")
-		try:
-			exist = lkp[(dict["Station Name"], dict["YEAR"], dict["MODY"], dict["HRMN"])]
-		except:
-			return False
-		if len(exist) > 1:
-			logger.warning("more then one row duplicate {}".format(dict))
-		if exist:
-			return exist
+	def prepare_to_mongo(data):
+		n = len(settings.interpulate_value)
+
+		order_dict = OrderedDict(sorted(data.items()))
+		keys, values = zip(*order_dict.items())
+		_FAS = list(values[:n])
+		_Frequency = [float(i) for i in keys[:n]]
+
+		fre_fas = dict(zip(_Frequency, _FAS))
+		Frequency, FAS = zip(*OrderedDict(sorted(fre_fas.items())).items())
+
+		data_to_mongo = dict(zip(list(keys[n:]), list(values[n:])))
+		data_to_mongo["Frequency"] = [Frequency]
+		data_to_mongo["FAS"] = [FAS]
+		data_to_mongo["YEAR"] = int(data_to_mongo["YEAR"])
+		data_to_mongo["MODY"] = int(data_to_mongo["MODY"])
+		data_to_mongo["HRMN"] = int(data_to_mongo["HRMN"])
+
+		return data_to_mongo
+
 
 	@staticmethod
 	def get_n_row():

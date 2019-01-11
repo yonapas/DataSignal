@@ -3,28 +3,22 @@ import petl as etl
 import settings
 import csv
 import numpy as np
+from pymongo import MongoClient
 
 raw_data_folder = settings.raw_data_folder
 CheckAgainFile = settings.CheckAgainFile
+prefix = settings.prefix_mseed
 files = []
 
 
 class MseedExtractor():
 
-	def __init__(self, mode):
-		self.mode = mode
+	def __init__(self):
+		self.mode = None
 
 	def get_file(self):
-		if self.mode == "MAIN":
-			files = glob("{0}/2017-1*.mseed".format(raw_data_folder))
 
-		if self.mode == "CHECK":
-			check_trace_table = etl.fromcsv(CheckAgainFile)
-			events = set(etl.values(check_trace_table, "mseedname"))
-			files = []
-			for e in events:
-				files.append(glob("{0}/{1}.mseed".format(raw_data_folder, e))[0])
-
+		files = glob("{0}/{1}.mseed".format(raw_data_folder, prefix))
 		return files
 
 
@@ -73,6 +67,42 @@ class CorrectTrace():
 
 		return Ftime, Facc, Ffreq, Fampli, FN, filters, trace
 
+
+class ConnectToMongo():
+	def __init__(self, host, port, db, ff, ca):
+		client = MongoClient(host, port)
+		self._db = client[db]
+		self.flatfile = self._db[ff]
+		self.checkagain = self._db[ca]
+
+	def exists_trace_mongo_ff(self, dict):
+		ff_exists = self.flatfile.find(dict)
+		try:
+			ff_exists.next()
+			# this trace is exists
+			return True
+		except StopIteration:
+			# this trace is not exists
+			return False
+
+	def exists_trace_mongo_ca(self, dict):
+		ca_exists = self.checkagain.find(dict)
+		try:
+			ca_exists.next()
+			# this trace is exists
+			return True
+		except StopIteration:
+			# this trace is not exists
+			return False
+
+	def insert_ff(self, dict):
+		self.flatfile.insert_one(dict)
+
+	def insert_checkagain(self, dict):
+		self.checkagain(dict)
+
+	def count_row(self):
+		return self.flatfile.count()
 
 
 def dofft(trace):

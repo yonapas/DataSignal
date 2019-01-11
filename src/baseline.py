@@ -22,7 +22,7 @@ def useBaseLine(trace):
 	trace in acceleration domain.
 	"""
 
-	trace_baseline = trace.copy()
+	trace_baseline = trace.copy() # G unit
 	acc = trace_baseline.data
 	velocity =[0]
 	disp = [0]
@@ -51,4 +51,5 @@ def useBaseLine(trace):
 	newAcc = acc[:-2] - accBL
 	trace_baseline.data = newAcc
 
-	return trace_baseline
+	return trace_baseline  # G unit
+

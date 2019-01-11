@@ -79,7 +79,7 @@ class graph():
 		"""
 		self.fig.suptitle('{0} {1} ,dt:{2}'.format(self.name, self.ename, self.dt), fontsize=20)
 		self.ax1.set_title("press Esc for reset signal\n distance from Epicenter {0} KM".format(self.distance), fontsize=12)
-		self.ax1.set_ylabel("ACC [g]")
+		self.ax1.set_ylabel("ACC [m/s^2]")
 		self.ax1.set_xlabel("time [sec]")
 
 		# set name for any canvas:

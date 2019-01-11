@@ -1,5 +1,4 @@
-from scipy.fftpack import fft
-import numpy as np
+
 from obspy import read, read_inventory
 from obspy.geodetics import gps2dist_azimuth
 from glob import glob 
@@ -22,8 +21,8 @@ def getEpiCenterMagnitude(date):
 						ID = line[0]
 						mag = line[5]
 						return epice, mag, depth, ID
-	
-	print "no earthQ found in txt file\n"
+
+	print("no earthQ found in txt file\n")
 	return None
 	
 
@@ -34,8 +33,8 @@ for file in xml_file:
 	traces_file = glob("{0}.mseed".format(file.split(".")[0]))
 
 	if not traces_file:
-		print "no mseed found to xml {0} \n".format(file)
-		continue 
+		print("no mseed found to xml {0} \n".format(file))
+		continue
 
 	if traces_file:
 		traces = read(traces_file[0])
@@ -53,7 +52,7 @@ for file in xml_file:
 				acc_max = max(tr.remove_response(inventory=file, output="ACC").data)
 				acc[name] = str(acc_max)
 			except:
-				print name , file
+				print(name, file)
 
 		try:
 			epi, mag, depth, ID= getEpiCenterMagnitude(date)
@@ -96,7 +95,7 @@ for file in xml_file:
 						.format(_net, _sta, _channel ,lat, lng, dista, acc_sta))
 			outfile.close()
 		except:
-			print "error"
-			print file
+			print("error")
+			print(file)
 
  
